@@ -9,7 +9,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.29"
+__version__ = "0.30"
 __date__    = "11.2016"
 
 # * (C) Maurice easyw-fc 2016
@@ -401,11 +401,17 @@ def Align(normal,type,mode,cx,cy,cz):
                 m_angle, m_angle_rad = angleBetween(normals[0],normals[j])
                 say (m_angle)
                 Origin = Base.Vector(0, 0, 0)
+                copl=0
                 if colinearVectors(normals[0], Origin, normals[j], info=1, tolerance=1e-12):
-                    #rot_axis = Base.Vector(0, 0, 1).cross(normals[0])
                     rot_axis = Base.Vector(0, 0, 1).cross(normals[0])
+                    if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
+                        rot_axis=Base.Vector(0, 1, 0).cross(normals[0])
                     rot_center = coordPs[j]
-                    rot_angle = 180. # + m_angleAlignFaces
+                    if normal==1:
+                        rot_angle = 180. # + m_angleAlignFaces
+                    else:
+                        rot_angle=0.
+                    copl=1
                     #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
                 else:
                     #m_angle, m_angle_rad = angleBetween(Plane_Normal,Plane_Normal_ref)
@@ -422,8 +428,9 @@ def Align(normal,type,mode,cx,cy,cz):
                 say(rot_angle)
                 if rot_angle!=0: # and rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
                     if mode==0 or mode==2:
-                        Draft.rotate(objs[j],-rot_angle,rot_center,rot_axis)
-                say("Rotated     : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
+                        if rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
+                            Draft.rotate(objs[j],-rot_angle,rot_center,rot_axis)
+                            say("Rotated     : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
             j=j+1
     
     coords = []
