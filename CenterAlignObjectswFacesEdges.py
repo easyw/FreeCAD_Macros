@@ -9,7 +9,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.30"
+__version__ = "0.32"
 __date__    = "11.2016"
 
 # * (C) Maurice easyw-fc 2016
@@ -20,6 +20,7 @@ __date__    = "11.2016"
 # *   for detail see the LICENCE text file.                                 *
 
 ## done case: invert normal and standard when already aligned planes
+## done works for Bodys on FC 0.17
 
 import FreeCAD, FreeCADGui, Draft, Part, DraftTools
 from FreeCAD import Base
@@ -197,6 +198,16 @@ def singleInstance():
 #        else:
 #            pass
 
+## assigning DisplayModeBody to Tip to attach Facebinder to Body
+doc=FreeCAD.ActiveDocument
+bodys=[]
+bo_name = ""
+for o in doc.Objects:
+    #print o.Name
+    if 'Body' in o.Name and 'Origin' not in o.Name:
+        bodys.append(o)
+        FreeCADGui.ActiveDocument.getObject(o.Name).DisplayModeBody = u"Tip"    
+
 singleInstance()
 
 CenterAlignObjectsFacesEdges = QtGui.QWidget()
@@ -310,7 +321,6 @@ def Align(normal,type,mode,cx,cy,cz):
     sEdge = []
     j = 0
     # .BoundBox.Center
-    
     #align faces
     if (len(selEx) > 1) and (len(selEx)==len(sel)):
         #s = obj.Shape
@@ -402,23 +412,34 @@ def Align(normal,type,mode,cx,cy,cz):
                 say (m_angle)
                 Origin = Base.Vector(0, 0, 0)
                 copl=0
-                if colinearVectors(normals[0], Origin, normals[j], info=1, tolerance=1e-12):
-                    rot_axis = Base.Vector(0, 0, 1).cross(normals[0])
-                    if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
-                        rot_axis=Base.Vector(0, 1, 0).cross(normals[0])
-                    rot_center = coordPs[j]
-                    if normal==1:
-                        rot_angle = 180. # + m_angleAlignFaces
+                #rot_angle = m_angle 
+                rot_axis = normals[0].cross(normals[j])
+                rot_center = coordPs[j]
+                rot_angle = m_angle # + m_angleAlignFaces
+                if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
+                    if colinearVectors(normals[0], Origin, normals[j], info=1, tolerance=1e-12):
+                        rot_axis = Base.Vector(0, 0, 1).cross(normals[0])
+                        if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
+                            rot_axis=Base.Vector(0, 1, 0).cross(normals[0])
+                        rot_center = coordPs[j]
+                        if normal==1:
+                            #if rot_angle!=180.:
+                            rot_angle = 180. # + m_angleAlignFaces
+                            #else:
+                            #    rot_angle=0.
+                        else:
+                            #if rot_angle!=0.:
+                            rot_angle=0.
+                            #else:
+                            #    rot_angle=180.
+                        copl=1
+                        #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
                     else:
-                        rot_angle=0.
-                    copl=1
-                    #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
-                else:
-                    #m_angle, m_angle_rad = angleBetween(Plane_Normal,Plane_Normal_ref)
-                    rot_axis = normals[0].cross(normals[j])
-                    rot_center = coordPs[j]
-                    rot_angle = m_angle # + m_angleAlignFaces
-                    #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
+                        #m_angle, m_angle_rad = angleBetween(Plane_Normal,Plane_Normal_ref)
+                        rot_axis = normals[0].cross(normals[j])
+                        rot_center = coordPs[j]
+                        rot_angle = m_angle # + m_angleAlignFaces
+                        #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
                 #rot_axis = normals[0].cross(normals[j])
                 #rot_center = coordPs[j]
                 #rot_angle = m_angle # + m_angleAlignFaces
