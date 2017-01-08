@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # evolution of Macro_CenterFace
-# and some part of Macro WorkFeature
+# some part of Macro WorkFeature
+# and assembly2
 #
 # center objs faces/closed_edges to first obj face/closed_edge
 #
@@ -9,8 +10,12 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.32"
-__date__    = "11.2016"
+__version__ = "0.34"
+__date__    = "01.2017"
+
+## todo 
+## align edges when are just a line
+## use faces when available?
 
 # * (C) Maurice easyw-fc 2016
 # *   This program is free software; you can redistribute it and/or modify  *
@@ -27,7 +32,7 @@ from FreeCAD import Base
 
 # Form implementation generated from reading ui file 'C:\Cad\Progetti_K\3D-FreeCad-tools\CenterAlignObjectswFacesEdges.ui'
 #
-# Created: Wed Nov 23 23:17:52 2016
+# Created: Sun Jan 08 17:23:54 2017
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -38,7 +43,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
     def setupUi(self, CenterAlignObjectsFacesEdges):
         CenterAlignObjectsFacesEdges.setObjectName("CenterAlignObjectsFacesEdges")
         CenterAlignObjectsFacesEdges.setWindowModality(QtCore.Qt.NonModal)
-        CenterAlignObjectsFacesEdges.resize(367, 351)
+        CenterAlignObjectsFacesEdges.resize(475, 351)
         CenterAlignObjectsFacesEdges.setFocusPolicy(QtCore.Qt.NoFocus)
         self.verticalLayout = QtGui.QVBoxLayout(CenterAlignObjectsFacesEdges)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -56,11 +61,11 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.groupBox = QtGui.QGroupBox(CenterAlignObjectsFacesEdges)
         self.groupBox.setObjectName("groupBox")
         self.rb_bb = QtGui.QRadioButton(self.groupBox)
-        self.rb_bb.setGeometry(QtCore.QRect(11, 20, 161, 20))
+        self.rb_bb.setGeometry(QtCore.QRect(11, 20, 241, 20))
         self.rb_bb.setChecked(True)
         self.rb_bb.setObjectName("rb_bb")
         self.rb_mass = QtGui.QRadioButton(self.groupBox)
-        self.rb_mass.setGeometry(QtCore.QRect(200, 20, 121, 20))
+        self.rb_mass.setGeometry(QtCore.QRect(300, 20, 181, 20))
         self.rb_mass.setObjectName("rb_mass")
         self.horizontalLayout.addWidget(self.groupBox)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
@@ -76,23 +81,23 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.rb_planes.setGeometry(QtCore.QRect(20, 50, 261, 20))
         self.rb_planes.setObjectName("rb_planes")
         self.rb_centers_planes = QtGui.QRadioButton(self.groupBox_2)
-        self.rb_centers_planes.setGeometry(QtCore.QRect(20, 80, 261, 20))
+        self.rb_centers_planes.setGeometry(QtCore.QRect(20, 80, 301, 20))
         self.rb_centers_planes.setChecked(True)
         self.rb_centers_planes.setObjectName("rb_centers_planes")
         self.cb_x = QtGui.QCheckBox(self.groupBox_2)
-        self.cb_x.setGeometry(QtCore.QRect(290, 40, 41, 20))
+        self.cb_x.setGeometry(QtCore.QRect(370, 40, 41, 20))
         self.cb_x.setChecked(True)
         self.cb_x.setObjectName("cb_x")
         self.cb_y = QtGui.QCheckBox(self.groupBox_2)
-        self.cb_y.setGeometry(QtCore.QRect(290, 60, 41, 20))
+        self.cb_y.setGeometry(QtCore.QRect(370, 60, 41, 20))
         self.cb_y.setChecked(True)
         self.cb_y.setObjectName("cb_y")
         self.cb_z = QtGui.QCheckBox(self.groupBox_2)
-        self.cb_z.setGeometry(QtCore.QRect(290, 80, 41, 20))
+        self.cb_z.setGeometry(QtCore.QRect(370, 80, 41, 20))
         self.cb_z.setChecked(True)
         self.cb_z.setObjectName("cb_z")
         self.label_2 = QtGui.QLabel(self.groupBox_2)
-        self.label_2.setGeometry(QtCore.QRect(270, 20, 61, 16))
+        self.label_2.setGeometry(QtCore.QRect(350, 20, 61, 16))
         self.label_2.setObjectName("label_2")
         self.hLayout2.addWidget(self.groupBox_2)
         self.verticalLayout.addLayout(self.hLayout2)
@@ -114,6 +119,9 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.btnAlign = QtGui.QPushButton(CenterAlignObjectsFacesEdges)
         self.btnAlign.setObjectName("btnAlign")
         self.hLayout1.addWidget(self.btnAlign)
+        self.btnMove = QtGui.QPushButton(CenterAlignObjectsFacesEdges)
+        self.btnMove.setObjectName("btnMove")
+        self.hLayout1.addWidget(self.btnMove)
         self.verticalLayout_3.addLayout(self.hLayout1)
         self.verticalLayout.addLayout(self.verticalLayout_3)
 
@@ -137,12 +145,13 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "First Face/Edge is the Reference for alignment", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
-
+        self.btnMove.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Move", None, QtGui.QApplication.UnicodeUTF8))
 
 ### ------------------------------------------------------------------------------------ ###
 ### ---------code to be inserted and remove from new generation------------------------- ###
 ### ------------------------------------------------------------------------------------ ###
         self.btnAlign.clicked.connect(self.onAlign)
+        self.btnMove.clicked.connect(self.onMove)
         
     def onAlign(self):
         say("Align clicked")
@@ -172,6 +181,11 @@ class Ui_CenterAlignObjectsFacesEdges(object):
             cz=1
         Align(normal,type,mode,cx,cy,cz)
 
+    def onMove(self):
+        say("Move clicked")
+        Move()
+        say("Move clicked2")
+        
 def say(msg):
     FreeCAD.Console.PrintMessage(msg)
     FreeCAD.Console.PrintMessage('\n')
@@ -179,7 +193,11 @@ def say(msg):
 def sayw(msg):
     FreeCAD.Console.PrintWarning(msg)
     FreeCAD.Console.PrintWarning('\n')
-    
+
+def sayerr(msg):
+    FreeCAD.Console.PrintError(msg)
+    FreeCAD.Console.PrintWarning('\n')
+
 def singleInstance():
     app = QtGui.qApp
 
@@ -200,42 +218,150 @@ def singleInstance():
 
 ## assigning DisplayModeBody to Tip to attach Facebinder to Body
 doc=FreeCAD.ActiveDocument
-bodys=[]
-bo_name = ""
-for o in doc.Objects:
-    #print o.Name
-    if 'Body' in o.Name and 'Origin' not in o.Name:
-        bodys.append(o)
-        FreeCADGui.ActiveDocument.getObject(o.Name).DisplayModeBody = u"Tip"    
+#Init        
+if Gui.ActiveDocument <> None:
+    #say (Gui.ActiveDocument)
 
-singleInstance()
+    bodys=[]
+    bo_name = ""
+    for o in doc.Objects:
+        #print o.Name
+        if 'Body' in o.Name and 'Origin' not in o.Name:
+            bodys.append(o)
+            FreeCADGui.ActiveDocument.getObject(o.Name).DisplayModeBody = u"Tip"    
+    
+    singleInstance()
+    
+    CenterAlignObjectsFacesEdges = QtGui.QWidget()
+    ui = Ui_CenterAlignObjectsFacesEdges()
+    ui.setupUi(CenterAlignObjectsFacesEdges)
+    #CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+    CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint & QtCore.Qt.WindowTitleHint & QtCore.Qt.WindowMinimizeButtonHint & QtCore.Qt.WindowSystemMenuHint & QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowStaysOnTopHint);
+    ## CenterAlignObjectsFacesEdges.setWindowFlags(CenterAlignObjectsFacesEdges.windowFlags() & QtCore.Qt.CustomizeWindowHint)
+    #CenterAlignObjectsFacesEdges.setWindowModality(QtCore.Qt.ApplicationModal)
+    #self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+    #CenterAlignObjectsFacesEdges.setWindowFlags(CenterAlignObjectsFacesEdges.windowFlags() & QtCore.Qt.WindowStaysOnTopHint)
+    CenterAlignObjectsFacesEdges.show()
+    
+    # def center(self):
+    #     frameGm = self.frameGeometry()
+    #     screen = QtGui.QApplication.desktop().screenNumber(QtGui.QApplication.desktop().cursor().pos())
+    #     #say(screen)
+    #     centerPoint = QtGui.QApplication.desktop().screenGeometry(screen).center()
+    #     #say(centerPoint)
+    #     frameGm.moveCenter(centerPoint)
+    #     self.move(frameGm.center)
+    
+    #center(CenterAlignObjectsFacesEdges)
+    CenterAlignObjectsFacesEdges.move(10,100)
+    ## to do:
+    ## ok single instance
+    ## - always on top
+    ## - no maximize
+    ### ------------------------------------------------------------------------------------ ###
+    ### ---------code to be inserted and remove from new generation------------------------- ###
+    ### ------------------------------------------------------------------------------------ ###
+else:
+    sayw("no document to work with")  
 
-CenterAlignObjectsFacesEdges = QtGui.QWidget()
-ui = Ui_CenterAlignObjectsFacesEdges()
-ui.setupUi(CenterAlignObjectsFacesEdges)
-#CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowSystemMenuHint);
-#self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
-CenterAlignObjectsFacesEdges.show()
+def Move():
+    say('Move')
+    selection = [s for s in FreeCADGui.Selection.getSelectionEx() if s.Document == FreeCAD.ActiveDocument ]
+    if len(selection) == 1:
+        say('Move2')
+        PartMover( FreeCADGui.activeDocument().activeView(), selection[0].Object )
+    else:
+        PartMoverSelectionObserver()
 
-# def center(self):
-#     frameGm = self.frameGeometry()
-#     screen = QtGui.QApplication.desktop().screenNumber(QtGui.QApplication.desktop().cursor().pos())
-#     #say(screen)
-#     centerPoint = QtGui.QApplication.desktop().screenGeometry(screen).center()
-#     #say(centerPoint)
-#     frameGm.moveCenter(centerPoint)
-#     self.move(frameGm.center)
+class PartMover:
+    def __init__(self, view, obj):
+        self.obj = obj
+        self.initialPostion = self.obj.Placement.Base
+        self.copiedObject = False
+        self.view = view
+        self.callbackMove = self.view.addEventCallback("SoLocation2Event",self.moveMouse)
+        self.callbackClick = self.view.addEventCallback("SoMouseButtonEvent",self.clickMouse)
+        self.callbackKey = self.view.addEventCallback("SoKeyboardEvent",self.KeyboardEvent)
+    def moveMouse(self, info):
+        newPos = self.view.getPoint( *info['Position'] )
+        # debugPrint(5, 'new position %s' % str(newPos))
+        self.obj.Placement.Base = newPos
+    def removeCallbacks(self):
+        self.view.removeEventCallback("SoLocation2Event",self.callbackMove)
+        self.view.removeEventCallback("SoMouseButtonEvent",self.callbackClick)
+        self.view.removeEventCallback("SoKeyboardEvent",self.callbackKey)
+    def clickMouse(self, info):
+        # debugPrint(4, 'clickMouse info %s' % str(info))
+        if info['Button'] == 'BUTTON1' and info['State'] == 'DOWN':
+            if not info['ShiftDown'] and not info['CtrlDown']:
+                self.removeCallbacks()
+            elif info['ShiftDown']: #copy object
+                self.obj = duplicateImportedPart( self.obj )
+                self.copiedObject = True
+            elif info['CtrlDown']:
+                azi   =  ( numpy.random.rand() - 0.5 )*numpy.pi*2
+                ela   =  ( numpy.random.rand() - 0.5 )*numpy.pi
+                theta =  ( numpy.random.rand() - 0.5 )*numpy.pi
+                axis = azimuth_and_elevation_angles_to_axis( azi, ela )
+                self.obj.Placement.Rotation.Q = quaternion( theta, *axis )
 
-#center(CenterAlignObjectsFacesEdges)
-CenterAlignObjectsFacesEdges.move(10,100)
-## to do:
-## ok single instance
-## - always on top
-## - no maximize
-### ------------------------------------------------------------------------------------ ###
-### ---------code to be inserted and remove from new generation------------------------- ###
-### ------------------------------------------------------------------------------------ ###
+    def KeyboardEvent(self, info):
+        # debugPrint(4, 'KeyboardEvent info %s' % str(info))
+        if info['State'] == 'UP' and info['Key'] == 'ESCAPE':
+            if not self.copiedObject:
+                self.obj.Placement.Base = self.initialPostion
+            else:
+                FreeCAD.ActiveDocument.removeObject(self.obj.Name)
+            self.removeCallbacks()
+
+class PartMoverSelectionObserver:
+     def __init__(self):
+         FreeCADGui.Selection.addObserver(self)
+         FreeCADGui.Selection.removeSelectionGate()
+     def addSelection( self, docName, objName, sub, pnt ):
+         # debugPrint(4,'addSelection: docName,objName,sub = %s,%s,%s' % (docName, objName, sub))
+         FreeCADGui.Selection.removeObserver(self)
+         obj = FreeCAD.ActiveDocument.getObject(objName)
+         view = FreeCADGui.activeDocument().activeView()
+         PartMover( view, obj )
+
+# class MovePartCommand:
+#     say('Move')
+#     def Activated(self):
+#         selection = [s for s in FreeCADGui.Selection.getSelectionEx() if s.Document == FreeCAD.ActiveDocument ]
+#         if len(selection) == 1:
+#             say('Move2')
+#             PartMover( FreeCADGui.activeDocument().activeView(), selection[0].Object )
+#         else:
+#             PartMoverSelectionObserver()
+
+#FreeCADGui.addCommand('assembly2_movePart', MovePartCommand())
+            
+def duplicateImportedPart( part ):
+    nameBase = part.Label
+    while nameBase[-1] in '0123456789' and len(nameBase) > 0:
+        nameBase = nameBase[:-1]
+    try:
+        newObj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", findUnusedObjectName(nameBase))
+    except UnicodeEncodeError:
+        safeName = findUnusedObjectName('import_')
+        newObj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", safeName)
+        newObj.Label = findUnusedLabel( nameBase )
+    newObj.addProperty("App::PropertyFile",    "sourceFile",    "importPart").sourceFile = part.sourceFile
+    newObj.addProperty("App::PropertyFloat", "timeLastImport","importPart").timeLastImport =  part.timeLastImport
+    newObj.setEditorMode("timeLastImport",1)
+    newObj.addProperty("App::PropertyBool","fixedPosition","importPart").fixedPosition = False# part.fixedPosition
+    newObj.addProperty("App::PropertyBool","updateColors","importPart").updateColors = getattr(part,'updateColors',True)
+    newObj.Shape = part.Shape.copy()
+    for p in part.ViewObject.PropertiesList: #assuming that the user may change the appearance of parts differently depending on their role in the assembly.
+        if hasattr(newObj.ViewObject, p) and p not in ['DiffuseColor','Proxy']:
+            setattr(newObj.ViewObject, p, getattr( part.ViewObject, p))
+    newObj.ViewObject.DiffuseColor = copy.copy( part.ViewObject.DiffuseColor )
+    newObj.Proxy = Proxy_importPart()
+    newObj.ViewObject.Proxy = ImportedPartViewProviderProxy()
+    newObj.Placement.Base = part.Placement.Base
+    newObj.Placement.Rotation = part.Placement.Rotation
+    return newObj    
 
 def Align(normal,type,mode,cx,cy,cz):
     #cx = 1  # center x -> 1  
@@ -254,6 +380,117 @@ def Align(normal,type,mode,cx,cy,cz):
     #def sayw(msg):
     #    FreeCAD.Console.PrintWarning(msg)
     #    FreeCAD.Console.PrintWarning('\n')
+    
+    def edgeToVector(edge):
+        """ Return a vector from an edge or a Part.line.
+        """
+        if isinstance(edge,Part.Shape):
+            return edge.Vertexes[-1].Point.sub(edge.Vertexes[0].Point)
+        elif isinstance(edge,Part.Line):
+            return edge.EndPoint.sub(edge.StartPoint)
+        else:
+            sayw("Error in edgeToVector(edge) : not a good type of input" + str(type(edge)))
+            return None    
+
+    def centerLinePoint(edge,info=0):
+        """ Return the center point of the Line.
+        """
+        center = None
+        #VVector_A=edge.valueAt( 0.0 )
+        Vector_A = edge.Vertexes[0].Point
+        if info != 0:
+            say("Origin of line selected is : "+str(Vector_A)) 
+        #Vector_B=edge.valueAt( edge.Length )
+        Vector_B = edge.Vertexes[-1].Point
+        if info != 0:
+            say("End of line selected is : "+str(Vector_B)) 
+        Vector_MidPoint = Vector_B + Vector_A
+        center = Vector_MidPoint.multiply(0.5)
+        if info != 0:
+            say("Center of line selected is : "+str(center)) 
+        return center
+    
+    def object_alignEdges():
+        """ 
+        Align the Edge(s) from selected object(s) to the last Edge selected.
+        - Click first to select an Edge of an object or several Edges from several objects. 
+        - Click second to select an Edge to align to.
+    
+        NB:
+        The center of rotation is the center of the bounbing box if possible or 
+        the center of the Edge.
+        
+        if the Edge of the object selected is already aligned to the last one,
+        a rotation of 180 deg is applied to the object.
+        In this case the Axis of rotation is Z vector : Base.Vector(0, 0, 1)
+        
+        Two clicks will rotate by 180 deg.
+        """
+        msg=verbose
+    
+        error_msg =\
+        "INCORRECT Object(s) Selection :\n" +\
+        "You Must Select at least two(2) Edges (from two objects) !\n" +\
+        "All Edges will be aligned to the last one !"
+        
+        Selection = get_SelectedObjectsWithParent(info=msg, printError=False)
+        m_actDoc=get_ActiveDocument(info=1)
+        Selection2 = Gui.Selection.getSelectionEx(m_actDoc.Name)
+        
+        try:
+            SelectedObjects = Selection
+            Number_of_Edges  = SelectedObjects[1]
+            if msg!=0:
+                print_msg("Number_of_Edges=" + str(Number_of_Edges))
+                
+            if Number_of_Edges >= 2 :
+                Edge_List = SelectedObjects[4]
+                if msg != 0:
+                    print_msg(" Edge_List=" + str(Edge_List))
+                
+                # Get the Reference Edge : last of the selected
+                Ref_Edge_dict = Edge_List[-1]
+                for Selected_Edge, Parent_Edge in Ref_Edge_dict.iteritems():
+                    Edge_ref = Selected_Edge
+    
+                del Edge_List[-1]
+                            
+                for Selected_Edge_dict in Edge_List:
+                    if msg != 0:
+                        print_msg("Selected_Edge_dict = " + str(Selected_Edge_dict))
+                    for Selected_Edge, Parent_Edge in Selected_Edge_dict.iteritems():
+                        if msg != 0:
+                            print_msg("Selected_Edge = " + str(Selected_Edge))
+                            print_msg("Parent = " + str(Parent_Edge))
+                        try:                        
+                            Edge_Point = Parent_Edge.Shape.BoundBox.Center
+                        except:
+                            Edge_Point = centerLinePoint(Selected_Edge,info=0)
+                        
+                        if msg != 0:
+                            print_point(Edge_Point, msg="Edge_Point = ")
+                        Edge = Selected_Edge
+                        
+                        if colinearEdges(Edge, Edge_ref, info=msg , tolerance=1e-12):
+                            rot_axis = Base.Vector(0, 0, 1).cross(edgeToVector(Edge))
+                            rot_center = Edge_Point
+                            rot_angle = 180. + m_angleAlignEdges
+                            Draft.rotate(Parent_Edge,rot_angle,rot_center,rot_axis)
+                        else:
+                            m_angle, m_angle_rad = angleBetween(Edge,Edge_ref)
+                            print_msg("m_angle = " + str(m_angle))
+                            rot_axis = edgeToVector(Edge).cross(edgeToVector(Edge_ref))
+                            print_msg("rot_axis = " + str(rot_axis))
+                            rot_center = Edge_Point
+                            rot_angle = m_angle + m_angleAlignEdges
+                            Draft.rotate(Parent_Edge,rot_angle,rot_center,rot_axis)
+                # Reset the selection changed by Draft.rotate 
+                reset_SelectedObjects(Selection2, info=0)
+            else:
+                sayerr(error_msg)                          
+        except:
+            sayerr(error_msg)
+    
     
     def angleBetween(e1, e2):
         """ Return the angle (in degrees) between 2 edges.
@@ -332,9 +569,18 @@ def Align(normal,type,mode,cx,cy,cz):
             selectedEdge = selEx[j].SubObjects[0] # select one element SubObjects    
             sEdge.append(selectedEdge)
             pad=0
-            if str(fc.SubObjects[0])[1:5] != "Face":
-                wire = Part.Wire(selectedEdge)
-                fw = Part.Face(wire)
+            if str(fc.SubObjects[0])[1:5] != "Face": #edge
+                # try:                        
+                #     Edge_Point = centerLinePoint(selectedEdge,info=1)
+                # except:
+                #     stop
+                try:
+                    wire = Part.Wire(selectedEdge)
+                    fw = Part.Face(wire)
+                except:
+                    sayerr('edge non closed to be managed')
+                    Edge_Point = centerLinePoint(selectedEdge,info=0)
+                    stop
                 #Part.show(fw)
                 f=FreeCAD.ActiveDocument.addObject("Part::Feature","Facebinder")
                 f.Shape=fw 
@@ -344,7 +590,7 @@ def Align(normal,type,mode,cx,cy,cz):
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
-            else:
+            else: #face
                 pad=0
                 f=Draft.makeFacebinder(s)
                 say("Label : "+ str(sel[j].Label))     # extract the Label
@@ -412,34 +658,23 @@ def Align(normal,type,mode,cx,cy,cz):
                 say (m_angle)
                 Origin = Base.Vector(0, 0, 0)
                 copl=0
-                #rot_angle = m_angle 
-                rot_axis = normals[0].cross(normals[j])
-                rot_center = coordPs[j]
-                rot_angle = m_angle # + m_angleAlignFaces
-                if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
-                    if colinearVectors(normals[0], Origin, normals[j], info=1, tolerance=1e-12):
-                        rot_axis = Base.Vector(0, 0, 1).cross(normals[0])
-                        if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
-                            rot_axis=Base.Vector(0, 1, 0).cross(normals[0])
-                        rot_center = coordPs[j]
-                        if normal==1:
-                            #if rot_angle!=180.:
-                            rot_angle = 180. # + m_angleAlignFaces
-                            #else:
-                            #    rot_angle=0.
-                        else:
-                            #if rot_angle!=0.:
-                            rot_angle=0.
-                            #else:
-                            #    rot_angle=180.
-                        copl=1
-                        #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
+                if colinearVectors(normals[0], Origin, normals[j], info=1, tolerance=1e-12):
+                    rot_axis = Base.Vector(0, 0, 1).cross(normals[0])
+                    if rot_axis==FreeCAD.Vector (0.0, 0.0, 0.0):
+                        rot_axis=Base.Vector(0, 1, 0).cross(normals[0])
+                    rot_center = coordPs[j]
+                    if normal==1:
+                        rot_angle = 180. # + m_angleAlignFaces
                     else:
-                        #m_angle, m_angle_rad = angleBetween(Plane_Normal,Plane_Normal_ref)
-                        rot_axis = normals[0].cross(normals[j])
-                        rot_center = coordPs[j]
-                        rot_angle = m_angle # + m_angleAlignFaces
-                        #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
+                        rot_angle=0.
+                    copl=1
+                    #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
+                else:
+                    #m_angle, m_angle_rad = angleBetween(Plane_Normal,Plane_Normal_ref)
+                    rot_axis = normals[0].cross(normals[j])
+                    rot_center = coordPs[j]
+                    rot_angle = m_angle # + m_angleAlignFaces
+                    #Draft.rotate(Parent_Plane,rot_angle,rot_center,rot_axis)
                 #rot_axis = normals[0].cross(normals[j])
                 #rot_center = coordPs[j]
                 #rot_angle = m_angle # + m_angleAlignFaces
