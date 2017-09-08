@@ -10,8 +10,8 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.34"
-__date__    = "01.2017"
+__version__ = "0.35"
+__date__    = "09.2017"
 
 ## todo 
 ## align edges when are just a line
@@ -29,6 +29,7 @@ __date__    = "01.2017"
 
 import FreeCAD, FreeCADGui, Draft, Part, DraftTools
 from FreeCAD import Base
+import sys
 
 # Form implementation generated from reading ui file 'C:\Cad\Progetti_K\3D-FreeCad-tools\CenterAlignObjectswFacesEdges.ui'
 #
@@ -130,7 +131,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
 
     def retranslateUi(self, CenterAlignObjectsFacesEdges):
         CenterAlignObjectsFacesEdges.setWindowTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center Align Faces/Edges", None, QtGui.QApplication.UnicodeUTF8))
-        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Select multiple face(s) or closed Edges and click Align", None, QtGui.QApplication.UnicodeUTF8))
+        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Select [Ctrl+click] multiple face(s) or closed Edges and click Align", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "reference", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_bb.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Bounding Box", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_mass.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Mass", None, QtGui.QApplication.UnicodeUTF8))
@@ -197,6 +198,20 @@ def sayw(msg):
 def sayerr(msg):
     FreeCAD.Console.PrintError(msg)
     FreeCAD.Console.PrintWarning('\n')
+
+def make_string(input):
+    if (sys.version_info > (3, 0)):  #py3
+        if isinstance(input, str):
+            return input
+        else:
+            input =  input.encode('utf-8')
+            return input
+    else:  #py2
+        if type(input) == unicode:
+            input =  input.encode('utf-8')
+            return input
+        else:
+            return input
 
 def singleInstance():
     app = QtGui.qApp
@@ -580,20 +595,21 @@ def Align(normal,type,mode,cx,cy,cz):
                 except:
                     sayerr('edge non closed to be managed')
                     Edge_Point = centerLinePoint(selectedEdge,info=0)
+                    reply = QtGui.QMessageBox.information(None,"info", "edge(s) non closed are not managed atm\n")
                     stop
                 #Part.show(fw)
                 f=FreeCAD.ActiveDocument.addObject("Part::Feature","Facebinder")
                 f.Shape=fw 
                 pad=1
                 #FreeCAD.ActiveDocument.recompute()
-                say("Label : "+ str(sel[j].Label))     # extract the Label
+                say("Label : "+ make_string(sel[j].Label))     # extract the Label
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
             else: #face
                 pad=0
                 f=Draft.makeFacebinder(s)
-                say("Label : "+ str(sel[j].Label))     # extract the Label
+                say("Label : "+ make_string(sel[j].Label))     # extract the Label
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(f.Shape.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
@@ -714,7 +730,7 @@ def Align(normal,type,mode,cx,cy,cz):
             else:
                 pad=0
                 f=Draft.makeFacebinder(s)
-            say("Label : "+ str(sel[j].Label))     # extract the Label
+            say("Label : "+ make_string(sel[j].Label))     # extract the Label
             say("Name  : "+ str(sel[j].Name))     # extract the Name
             say( "Center Face Binder "+str(0)+" "+str(f.Shape.Faces[0].CenterOfMass)) # Vector center mass to face
             say( "Center Face Binder bb "+str(0)+" "+str(f.Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
