@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.35"
+__version__ = "0.36"
 __date__    = "09.2017"
 
 ## todo 
@@ -234,50 +234,40 @@ def singleInstance():
 ## assigning DisplayModeBody to Tip to attach Facebinder to Body
 doc=FreeCAD.ActiveDocument
 #Init        
-if Gui.ActiveDocument <> None:
-    #say (Gui.ActiveDocument)
+   
+    
+singleInstance()
 
-    bodys=[]
-    bo_name = ""
-    for o in doc.Objects:
-        #print o.Name
-        if 'Body' in o.Name and 'Origin' not in o.Name:
-            bodys.append(o)
-            FreeCADGui.ActiveDocument.getObject(o.Name).DisplayModeBody = u"Tip"    
-    
-    singleInstance()
-    
-    CenterAlignObjectsFacesEdges = QtGui.QWidget()
-    ui = Ui_CenterAlignObjectsFacesEdges()
-    ui.setupUi(CenterAlignObjectsFacesEdges)
-    #CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-    CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint & QtCore.Qt.WindowTitleHint & QtCore.Qt.WindowMinimizeButtonHint & QtCore.Qt.WindowSystemMenuHint & QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowStaysOnTopHint);
-    ## CenterAlignObjectsFacesEdges.setWindowFlags(CenterAlignObjectsFacesEdges.windowFlags() & QtCore.Qt.CustomizeWindowHint)
-    #CenterAlignObjectsFacesEdges.setWindowModality(QtCore.Qt.ApplicationModal)
-    #self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-    #CenterAlignObjectsFacesEdges.setWindowFlags(CenterAlignObjectsFacesEdges.windowFlags() & QtCore.Qt.WindowStaysOnTopHint)
-    CenterAlignObjectsFacesEdges.show()
-    
-    # def center(self):
-    #     frameGm = self.frameGeometry()
-    #     screen = QtGui.QApplication.desktop().screenNumber(QtGui.QApplication.desktop().cursor().pos())
-    #     #say(screen)
-    #     centerPoint = QtGui.QApplication.desktop().screenGeometry(screen).center()
-    #     #say(centerPoint)
-    #     frameGm.moveCenter(centerPoint)
-    #     self.move(frameGm.center)
-    
-    #center(CenterAlignObjectsFacesEdges)
-    CenterAlignObjectsFacesEdges.move(10,100)
-    ## to do:
-    ## ok single instance
-    ## - always on top
-    ## - no maximize
-    ### ------------------------------------------------------------------------------------ ###
-    ### ---------code to be inserted and remove from new generation------------------------- ###
-    ### ------------------------------------------------------------------------------------ ###
-else:
-    sayw("no document to work with")  
+CenterAlignObjectsFacesEdges = QtGui.QWidget()
+ui = Ui_CenterAlignObjectsFacesEdges()
+ui.setupUi(CenterAlignObjectsFacesEdges)
+#CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+CenterAlignObjectsFacesEdges.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint & QtCore.Qt.WindowTitleHint & QtCore.Qt.WindowMinimizeButtonHint & QtCore.Qt.WindowSystemMenuHint & QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowStaysOnTopHint);
+## CenterAlignObjectsFacesEdges.setWindowFlags(CenterAlignObjectsFacesEdges.windowFlags() & QtCore.Qt.CustomizeWindowHint)
+#CenterAlignObjectsFacesEdges.setWindowModality(QtCore.Qt.ApplicationModal)
+#self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+#CenterAlignObjectsFacesEdges.setWindowFlags(CenterAlignObjectsFacesEdges.windowFlags() & QtCore.Qt.WindowStaysOnTopHint)
+CenterAlignObjectsFacesEdges.show()
+
+# def center(self):
+#     frameGm = self.frameGeometry()
+#     screen = QtGui.QApplication.desktop().screenNumber(QtGui.QApplication.desktop().cursor().pos())
+#     #say(screen)
+#     centerPoint = QtGui.QApplication.desktop().screenGeometry(screen).center()
+#     #say(centerPoint)
+#     frameGm.moveCenter(centerPoint)
+#     self.move(frameGm.center)
+
+#center(CenterAlignObjectsFacesEdges)
+CenterAlignObjectsFacesEdges.move(10,100)
+## to do:
+## ok single instance
+## - always on top
+## - no maximize
+### ------------------------------------------------------------------------------------ ###
+### ---------code to be inserted and remove from new generation------------------------- ###
+### ------------------------------------------------------------------------------------ ###
+
 
 def Move():
     say('Move')
