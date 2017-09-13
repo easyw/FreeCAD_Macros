@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.36"
+__version__ = "0.37"
 __date__    = "09.2017"
 
 ## todo 
@@ -30,10 +30,11 @@ __date__    = "09.2017"
 import FreeCAD, FreeCADGui, Draft, Part, DraftTools
 from FreeCAD import Base
 import sys
+testing=True #true for showing helpers
 
 # Form implementation generated from reading ui file 'C:\Cad\Progetti_K\3D-FreeCad-tools\CenterAlignObjectswFacesEdges.ui'
 #
-# Created: Sun Jan 08 17:23:54 2017
+# Created: Wed Sep 13 22:20:26 2017
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -123,6 +124,9 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.btnMove = QtGui.QPushButton(CenterAlignObjectsFacesEdges)
         self.btnMove.setObjectName("btnMove")
         self.hLayout1.addWidget(self.btnMove)
+        self.btnUndoMove = QtGui.QPushButton(CenterAlignObjectsFacesEdges)
+        self.btnUndoMove.setObjectName("btnUndoMove")
+        self.hLayout1.addWidget(self.btnUndoMove)
         self.verticalLayout_3.addLayout(self.hLayout1)
         self.verticalLayout.addLayout(self.verticalLayout_3)
 
@@ -131,7 +135,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
 
     def retranslateUi(self, CenterAlignObjectsFacesEdges):
         CenterAlignObjectsFacesEdges.setWindowTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center Align Faces/Edges", None, QtGui.QApplication.UnicodeUTF8))
-        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Select [Ctrl+click] multiple face(s) or closed Edges and click Align", None, QtGui.QApplication.UnicodeUTF8))
+        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><head/><body><p>Select [Ctrl+Click] multiple face(s) or closed Edges and click Align</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "reference", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_bb.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Bounding Box", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_mass.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Mass", None, QtGui.QApplication.UnicodeUTF8))
@@ -145,14 +149,19 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "First Face/Edge is the Reference for alignment", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Move", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnUndoMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces / Edges and click to show Normals", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnUndoMove.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "undo", None, QtGui.QApplication.UnicodeUTF8))
 
 ### ------------------------------------------------------------------------------------ ###
 ### ---------code to be inserted and remove from new generation------------------------- ###
 ### ------------------------------------------------------------------------------------ ###
         self.btnAlign.clicked.connect(self.onAlign)
         self.btnMove.clicked.connect(self.onMove)
+        self.btnUndoMove.clicked.connect(self.onUndo)
         
     def onAlign(self):
         say("Align clicked")
@@ -186,7 +195,17 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         say("Move clicked")
         Move()
         say("Move clicked2")
-        
+
+    def onUndo(self):
+        say("Undo clicked")
+        Undo()
+        say("Undo clicked2")
+
+##############################################################
+global initial_placement, last_selection
+
+initial_placement = FreeCAD.Placement(App.Vector(0,0,0), App.Rotation(0,0,0), App.Vector(0,0,0)) #Placement [Pos=(0,0,0), Yaw-Pitch-Roll=(0,0,0)]
+last_selection = []      
 def say(msg):
     FreeCAD.Console.PrintMessage(msg)
     FreeCAD.Console.PrintMessage('\n')
@@ -260,6 +279,7 @@ CenterAlignObjectsFacesEdges.show()
 
 #center(CenterAlignObjectsFacesEdges)
 CenterAlignObjectsFacesEdges.move(10,100)
+##CenterAlignObjectsFacesEdges.move(500,100)
 ## to do:
 ## ok single instance
 ## - always on top
@@ -269,19 +289,37 @@ CenterAlignObjectsFacesEdges.move(10,100)
 ### ------------------------------------------------------------------------------------ ###
 
 
+def Undo():
+    say('Undo')
+    global initial_placement, last_selection
+    say ('last selection' + str(last_selection))
+    if len(last_selection) == 1:
+        obj = last_selection[0].Object
+        obj.Placement.Base =initial_placement
+    
+    
 def Move():
+    global initial_placement, last_selection
+
     say('Move')
     selection = [s for s in FreeCADGui.Selection.getSelectionEx() if s.Document == FreeCAD.ActiveDocument ]
     if len(selection) == 1:
+        last_selection = selection
         say('Move2')
         PartMover( FreeCADGui.activeDocument().activeView(), selection[0].Object )
+        say('starting '+str(initial_placement))
     else:
         PartMoverSelectionObserver()
 
 class PartMover:
+    global initial_placement
+    
     def __init__(self, view, obj):
+        global initial_placement
         self.obj = obj
-        self.initialPostion = self.obj.Placement.Base
+        self.initialPosition = self.obj.Placement.Base
+        initial_placement = self.initialPosition
+        sayw('init '+str(initial_placement))
         self.copiedObject = False
         self.view = view
         self.callbackMove = self.view.addEventCallback("SoLocation2Event",self.moveMouse)
@@ -296,9 +334,12 @@ class PartMover:
         self.view.removeEventCallback("SoMouseButtonEvent",self.callbackClick)
         self.view.removeEventCallback("SoKeyboardEvent",self.callbackKey)
     def clickMouse(self, info):
+        global initial_placement
         # debugPrint(4, 'clickMouse info %s' % str(info))
         if info['Button'] == 'BUTTON1' and info['State'] == 'DOWN':
             if not info['ShiftDown'] and not info['CtrlDown']:
+                say('releasing obj')
+                sayw('releasing '+ str( initial_placement ))
                 self.removeCallbacks()
             elif info['ShiftDown']: #copy object
                 self.obj = duplicateImportedPart( self.obj )
@@ -314,7 +355,7 @@ class PartMover:
         # debugPrint(4, 'KeyboardEvent info %s' % str(info))
         if info['State'] == 'UP' and info['Key'] == 'ESCAPE':
             if not self.copiedObject:
-                self.obj.Placement.Base = self.initialPostion
+                self.obj.Placement.Base = self.initialPosition
             else:
                 FreeCAD.ActiveDocument.removeObject(self.obj.Name)
             self.removeCallbacks()
@@ -712,7 +753,8 @@ def Align(normal,type,mode,cx,cy,cz):
             if str(fc.SubObjects[0])[1:5] != "Face":
                 wire = Part.Wire(selectedEdge)
                 fw = Part.Face(wire)
-                #Part.show(fw)
+                if testing:
+                    Part.show(fw)
                 f=FreeCAD.ActiveDocument.addObject("Part::Feature","Facebinder")
                 f.Shape=fw 
                 pad=1

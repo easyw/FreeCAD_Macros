@@ -32,7 +32,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Select multiple face(s) or closed Edges and click Align</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select [Ctrl+Click] multiple face(s) or closed Edges and click Align&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -219,6 +219,9 @@
       <layout class="QHBoxLayout" name="hLayout1">
        <item>
         <widget class="QPushButton" name="btnAlign">
+         <property name="toolTip">
+          <string>select Faces or Edges (Ctrl+LBM) and click button to Apply</string>
+         </property>
          <property name="text">
           <string>Align</string>
          </property>
@@ -226,8 +229,21 @@
        </item>
        <item>
         <widget class="QPushButton" name="btnMove">
+         <property name="toolTip">
+          <string>select an Object and click button to Move it</string>
+         </property>
          <property name="text">
           <string>Move</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnUndoMove">
+         <property name="toolTip">
+          <string>select Faces / Edges and click to show Normals</string>
+         </property>
+         <property name="text">
+          <string>undo</string>
          </property>
         </widget>
        </item>
