@@ -10,12 +10,14 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.37"
+__version__ = "0.38" #undo alignement
 __date__    = "09.2017"
 
 ## todo 
 ## align edges when are just a line
 ## use faces when available?
+## make Undo doing opposite Moved, Rotated on objs (prob it is enough the Rotation plus actual undo)
+## align PartDN and Body using simplecopy plcm of faces
 
 # * (C) Maurice easyw-fc 2016
 # *   This program is free software; you can redistribute it and/or modify  *
@@ -148,7 +150,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "First Face/Edge is the Reference for alignment", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.38</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -203,9 +205,17 @@ class Ui_CenterAlignObjectsFacesEdges(object):
 
 ##############################################################
 global initial_placement, last_selection
-
+global moving, rotating
+    
+#init
 initial_placement = FreeCAD.Placement(App.Vector(0,0,0), App.Rotation(0,0,0), App.Vector(0,0,0)) #Placement [Pos=(0,0,0), Yaw-Pitch-Roll=(0,0,0)]
+moving = [] #[App.Vector(0,0,0)]
+rotating = [] #[0, App.Vector(0,0,0), App.Vector(0,0,0)]
+#Draft.rotate(objs[j],-rot_angle,rot_center,rot_axis)
+#rotating=[rot_angle,rot_center,rot_axis]
+
 last_selection = []      
+
 def say(msg):
     FreeCAD.Console.PrintMessage(msg)
     FreeCAD.Console.PrintMessage('\n')
@@ -278,7 +288,7 @@ CenterAlignObjectsFacesEdges.show()
 #     self.move(frameGm.center)
 
 #center(CenterAlignObjectsFacesEdges)
-CenterAlignObjectsFacesEdges.move(10,100)
+CenterAlignObjectsFacesEdges.move(100,100)
 ##CenterAlignObjectsFacesEdges.move(500,100)
 ## to do:
 ## ok single instance
@@ -292,11 +302,36 @@ CenterAlignObjectsFacesEdges.move(10,100)
 def Undo():
     say('Undo')
     global initial_placement, last_selection
-    say ('last selection' + str(last_selection))
+    global moving, rotating
+    global objs, objs_plc
+    
     if len(last_selection) == 1:
         obj = last_selection[0].Object
+        say ('last selection: ' + obj.Name)
         obj.Placement.Base =initial_placement
-    
+        FreeCAD.ActiveDocument.recompute()
+    elif len (objs) > 1:
+        say ('Moving: ' + str(moving))
+        say ('Rotating: ' + str(rotating))
+        i=0
+        for o in objs:
+            say ('obj: ' + o.Name)
+            if i != 0:
+                #o.Placement.Base = objs_plc [i]
+                if rotating[i][0]!=0:
+                    sayw('restoring rotation')
+                    o.Placement.move(App.Vector(-moving[i][0],-moving[i][1],-moving[i][2]))
+                    Draft.rotate(o,rotating[i][0],rotating[i][1],rotating[i][2])
+                else:
+                    sayw('restoring position')
+                    o.Placement.Base = objs_plc [i]
+                #o.Placement=rtg.multiply(o.Placement)  #incremental Placement
+                #o.Placement=moving.multiply(o.Placement)  #incremental Placement
+            #else:
+            #    o.Placement.Base = objs_plc [i]
+            say ('Placement: ' + str(objs_plc [i]))
+            i=i+1
+        FreeCAD.ActiveDocument.recompute()    
     
 def Move():
     global initial_placement, last_selection
@@ -339,7 +374,9 @@ class PartMover:
         if info['Button'] == 'BUTTON1' and info['State'] == 'DOWN':
             if not info['ShiftDown'] and not info['CtrlDown']:
                 say('releasing obj')
-                sayw('releasing '+ str( initial_placement ))
+                FreeCAD.ActiveDocument.recompute()
+                sayw('releasing\ninitial p: '+ str( initial_placement ))
+                sayw('final p: '+str(self.obj.Placement.Base))
                 self.removeCallbacks()
             elif info['ShiftDown']: #copy object
                 self.obj = duplicateImportedPart( self.obj )
@@ -410,6 +447,12 @@ def duplicateImportedPart( part ):
     return newObj    
 
 def Align(normal,type,mode,cx,cy,cz):
+    global initial_placement, last_selection
+    global objs, objs_plc
+    global moving, rotating
+    objs = [] ; objs_plc = []
+    
+    
     #cx = 1  # center x -> 1  
     #cy = 1  # center y -> 1 
     #cz = 1  # center z -> 1 
@@ -419,6 +462,26 @@ def Align(normal,type,mode,cx,cy,cz):
     if type==1:
         use_bb = False #align center based on bounding boxes or center of mass
 
+    sel = FreeCADGui.Selection.getSelection()
+    selEx = FreeCADGui.Selection.getSelectionEx()
+    if len(selEx) < 2:
+        return
+    say("number of objects: "+ str(len(selEx)))
+    objs = [selobj.Object for selobj in selEx]
+    #k=0
+    for o in objs:
+        say ('obj: ' + o.Name)
+        objs_plc.append(o.Placement.Base)
+        say ('Placement: ' + str(o.Placement.Base))
+        moving.append([App.Vector(0,0,0)])
+        rotating.append([0, App.Vector(0,0,0), App.Vector(0,0,0)])
+        #k=k+1
+    
+    #objs_plc = [selobj.Object.Placement.Base for selobj in selEx]
+    
+    say(objs)
+    sayw(objs_plc)
+    #stop
     #def say(msg):
     #    FreeCAD.Console.PrintMessage(msg)
     #    FreeCAD.Console.PrintMessage('\n')
@@ -592,12 +655,6 @@ def Align(normal,type,mode,cx,cy,cz):
             return False
         return 
     
-    sel = FreeCADGui.Selection.getSelection()
-    selEx = FreeCADGui.Selection.getSelectionEx()
-    say("number of objects: "+ str(len(selEx)))
-    objs = [selobj.Object for selobj in selEx]
-    
-    say(objs)
     coords = []
     normals = []
     coordPs = []
@@ -607,6 +664,7 @@ def Align(normal,type,mode,cx,cy,cz):
     #align faces
     if (len(selEx) > 1) and (len(selEx)==len(sel)):
         #s = obj.Shape
+        last_selection = [] #removing old Move object
         for fc in selEx:
             say ("j= "+str(j))
             say("len selEx "+str(len(selEx)))
@@ -725,7 +783,7 @@ def Align(normal,type,mode,cx,cy,cz):
                 #rot_axis = normals[0].cross(normals[j])
                 #rot_center = coordPs[j]
                 #rot_angle = m_angle # + m_angleAlignFaces
-                say("axis,center,angle")
+                sayw("axis,center,angle")
                 say(rot_axis)
                 say(rot_center)
                 say(rot_angle)
@@ -733,7 +791,12 @@ def Align(normal,type,mode,cx,cy,cz):
                     if mode==0 or mode==2:
                         if rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
                             Draft.rotate(objs[j],-rot_angle,rot_center,rot_axis)
+                            rotating[j] = [rot_angle,rot_center,rot_axis]
                             say("Rotated     : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
+                        else:
+                            rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
+                else:
+                    rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
             j=j+1
     
     coords = []
@@ -810,9 +873,13 @@ def Align(normal,type,mode,cx,cy,cz):
                 pos=App.Vector((-coords[j][0]+coords[0][0])*cx,(-coords[j][1]+coords[0][1])*cy,(-coords[j][2]+coords[0][2])*cz)
                 if mode==0 or mode==1:
                     objs[j].Placement.move(pos)
+                    moving[j] = pos
                     say("Moved     : "+str(coordNx-coords[0][0])+" "+str(coordNy-coords[0][1])+" "+str(coordNz-coords[0][2]))
+                else:
+                    moving[j] = App.Vector(0,0,0)
             j=j+1
     
+    FreeCAD.ActiveDocument.recompute()
     for obj in objs:
         FreeCADGui.Selection.removeSelection(obj)
     
