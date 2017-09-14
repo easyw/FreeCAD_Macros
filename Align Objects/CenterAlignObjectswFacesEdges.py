@@ -310,6 +310,8 @@ def Undo():
         say ('last selection: ' + obj.Name)
         obj.Placement.Base =initial_placement
         FreeCAD.ActiveDocument.recompute()
+        objs = []
+        last_selection = []
     elif len (objs) > 1:
         say ('Moving: ' + str(moving))
         say ('Rotating: ' + str(rotating))
@@ -331,14 +333,18 @@ def Undo():
             #    o.Placement.Base = objs_plc [i]
             say ('Placement: ' + str(objs_plc [i]))
             i=i+1
-        FreeCAD.ActiveDocument.recompute()    
+        objs = []
+        last_selection = []
+        FreeCAD.ActiveDocument.recompute()
     
 def Move():
     global initial_placement, last_selection
-
+    global objs, objs_plc
+    
     say('Move')
     selection = [s for s in FreeCADGui.Selection.getSelectionEx() if s.Document == FreeCAD.ActiveDocument ]
     if len(selection) == 1:
+        objs = []
         last_selection = selection
         say('Move2')
         PartMover( FreeCADGui.activeDocument().activeView(), selection[0].Object )
@@ -466,6 +472,7 @@ def Align(normal,type,mode,cx,cy,cz):
     selEx = FreeCADGui.Selection.getSelectionEx()
     if len(selEx) < 2:
         return
+    last_selection = []
     say("number of objects: "+ str(len(selEx)))
     objs = [selobj.Object for selobj in selEx]
     #k=0
