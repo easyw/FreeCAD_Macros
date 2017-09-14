@@ -360,7 +360,7 @@ class PartMover:
         self.obj = obj
         self.initialPosition = self.obj.Placement.Base
         initial_placement = self.initialPosition
-        #sayw('init '+str(initial_placement))
+        sayw('init '+str(initial_placement))
         self.copiedObject = False
         self.view = view
         self.callbackMove = self.view.addEventCallback("SoLocation2Event",self.moveMouse)
@@ -381,8 +381,8 @@ class PartMover:
             if not info['ShiftDown'] and not info['CtrlDown']:
                 say('releasing obj')
                 FreeCAD.ActiveDocument.recompute()
-                #sayw('releasing\ninitial p: '+ str( initial_placement ))
-                #sayw('final p: '+str(self.obj.Placement.Base))
+                sayw('releasing\ninitial p: '+ str( initial_placement ))
+                sayw('final p: '+str(self.obj.Placement.Base))
                 self.removeCallbacks()
             elif info['ShiftDown']: #copy object
                 self.obj = duplicateImportedPart( self.obj )
@@ -486,8 +486,8 @@ def Align(normal,type,mode,cx,cy,cz):
     
     #objs_plc = [selobj.Object.Placement.Base for selobj in selEx]
     
-    #say(objs)
-    #sayw(objs_plc)
+    say(objs)
+    sayw(objs_plc)
     #stop
     #def say(msg):
     #    FreeCAD.Console.PrintMessage(msg)
