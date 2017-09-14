@@ -32,7 +32,7 @@ __date__    = "09.2017"
 import FreeCAD, FreeCADGui, Draft, Part, DraftTools
 from FreeCAD import Base
 import sys
-testing=True #true for showing helpers
+testing=False #true for showing helpers
 
 # Form implementation generated from reading ui file 'C:\Cad\Progetti_K\3D-FreeCad-tools\CenterAlignObjectswFacesEdges.ui'
 #
