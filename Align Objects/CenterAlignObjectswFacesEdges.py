@@ -10,8 +10,11 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.38" #undo alignement
+__version__ = "0.4.3" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
+
+testing=False #true for showing helpers
+testing2=False #true for showing helpers
 
 ## todo 
 ## align edges when are just a line
@@ -32,7 +35,6 @@ __date__    = "09.2017"
 import FreeCAD, FreeCADGui, Draft, Part, DraftTools
 from FreeCAD import Base
 import sys
-testing=False #true for showing helpers
 
 # Form implementation generated from reading ui file 'C:\Cad\Progetti_K\3D-FreeCad-tools\CenterAlignObjectswFacesEdges.ui'
 #
@@ -150,7 +152,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.38</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.3</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -206,11 +208,15 @@ class Ui_CenterAlignObjectsFacesEdges(object):
 ##############################################################
 global initial_placement, last_selection
 global moving, rotating
+global objs_moved, plc_moved
+
     
 #init
 initial_placement = FreeCAD.Placement(App.Vector(0,0,0), App.Rotation(0,0,0), App.Vector(0,0,0)) #Placement [Pos=(0,0,0), Yaw-Pitch-Roll=(0,0,0)]
 moving = [] #[App.Vector(0,0,0)]
 rotating = [] #[0, App.Vector(0,0,0), App.Vector(0,0,0)]
+objs_moved = []
+plc_moved = []
 #Draft.rotate(objs[j],-rot_angle,rot_center,rot_axis)
 #rotating=[rot_angle,rot_center,rot_axis]
 
@@ -250,15 +256,6 @@ def singleInstance():
             i.deleteLater()
         else:
             pass
-#    t=FreeCADGui.getMainWindow()
-#    dw=t.findChildren(QtGui.QDockWidget)
-#    #print str(dw)
-#    for i in dw:
-#        print str(i.objectName())
-#        if str(i.objectName()) == "CenterAlignObjectsFacesEdges": #"kicad StepUp 3D tools":
-#            i.deleteLater()
-#        else:
-#            pass
 
 ## assigning DisplayModeBody to Tip to attach Facebinder to Body
 doc=FreeCAD.ActiveDocument
@@ -288,8 +285,10 @@ CenterAlignObjectsFacesEdges.show()
 #     self.move(frameGm.center)
 
 #center(CenterAlignObjectsFacesEdges)
-CenterAlignObjectsFacesEdges.move(100,100)
-##CenterAlignObjectsFacesEdges.move(500,100)
+if not testing:
+    CenterAlignObjectsFacesEdges.move(100,100)
+else:
+    CenterAlignObjectsFacesEdges.move(500,100)
 ## to do:
 ## ok single instance
 ## - always on top
@@ -304,37 +303,31 @@ def Undo():
     global initial_placement, last_selection
     global moving, rotating
     global objs, objs_plc
-    
+    global objs_moved, plc_moved
+
     if len(last_selection) == 1:
         obj = last_selection[0].Object
         say ('last selection: ' + obj.Name)
-        obj.Placement.Base =initial_placement
+        #obj.Placement.Base =initial_placement
+        obj.Placement = initial_placement
         FreeCAD.ActiveDocument.recompute()
         objs = []
         last_selection = []
     elif len (objs) > 1:
         say ('Moving: ' + str(moving))
         say ('Rotating: ' + str(rotating))
+        #sayerr(len(objs_moved))
         i=0
-        for o in objs:
-            say ('obj: ' + o.Name)
-            if i != 0:
-                #o.Placement.Base = objs_plc [i]
-                if rotating[i][0]!=0:
-                    sayw('restoring rotation')
-                    o.Placement.move(App.Vector(-moving[i][0],-moving[i][1],-moving[i][2]))
-                    Draft.rotate(o,rotating[i][0],rotating[i][1],rotating[i][2])
-                else:
-                    sayw('restoring position')
-                    o.Placement.Base = objs_plc [i]
-                #o.Placement=rtg.multiply(o.Placement)  #incremental Placement
-                #o.Placement=moving.multiply(o.Placement)  #incremental Placement
-            #else:
-            #    o.Placement.Base = objs_plc [i]
-            say ('Placement: ' + str(objs_plc [i]))
+        for o in objs_moved:
+            #sayerr (o.Name)
+            #sayerr (plc_moved[i])
+            o.Placement = plc_moved[i]
             i=i+1
+            
         objs = []
         last_selection = []
+        objs_moved = []
+        plc_moved = []
         FreeCAD.ActiveDocument.recompute()
     
 def Move():
@@ -452,11 +445,36 @@ def duplicateImportedPart( part ):
     newObj.Placement.Rotation = part.Placement.Rotation
     return newObj    
 
+def recurse_node(obj,plcm,scl):
+    sayerr(obj.Name)
+    if "App::Part" in obj.TypeId or "Body" in obj.TypeId or "Compound" in obj.TypeId:
+        for o in obj.Group:
+            #sayerr(o.Name)
+            if "App::Part" in o.TypeId  or "Body" in o.TypeId or "Compound" in o.TypeId:
+                #sayerr(o.Name)#+" * "+obj.Name)
+                new_plcm=get_node_plc(o,obj)
+                recurse_node(o,new_plcm,scl)
+            else:
+                if "Sketcher" not in o.TypeId:
+                    simple_cpy_plc(o,plcm)
+                    scl.append(FreeCAD.ActiveDocument.ActiveObject)
+##
+
+def get_top_level (obj):
+    lvl=10000
+    for ap in obj.InListRecursive:
+        if len(ap.InListRecursive) < lvl:
+            top = ap
+            lvl = len(ap.InListRecursive)
+    return top
+
 def Align(normal,type,mode,cx,cy,cz):
     global initial_placement, last_selection
     global objs, objs_plc
     global moving, rotating
+    global objs_moved, plc_moved
     objs = [] ; objs_plc = []
+    objs_moved = [] ; plc_moved = []
     
     
     #cx = 1  # center x -> 1  
@@ -470,7 +488,7 @@ def Align(normal,type,mode,cx,cy,cz):
 
     sel = FreeCADGui.Selection.getSelection()
     selEx = FreeCADGui.Selection.getSelectionEx()
-    if len(selEx) < 2:
+    if len(selEx) < 2 and not testing:
         return
     last_selection = []
     say("number of objects: "+ str(len(selEx)))
@@ -478,25 +496,12 @@ def Align(normal,type,mode,cx,cy,cz):
     #k=0
     for o in objs:
         say ('obj: ' + o.Name)
-        objs_plc.append(o.Placement.Base)
-        say ('Placement: ' + str(o.Placement.Base))
+        objs_plc.append(o.Placement) #.Base)
+        say ('Placement: ' + str(o.Placement)) #.Base))
         moving.append([App.Vector(0,0,0)])
         rotating.append([0, App.Vector(0,0,0), App.Vector(0,0,0)])
         #k=k+1
-    
-    #objs_plc = [selobj.Object.Placement.Base for selobj in selEx]
-    
-    #say(objs)
-    #sayw(objs_plc)
-    #stop
-    #def say(msg):
-    #    FreeCAD.Console.PrintMessage(msg)
-    #    FreeCAD.Console.PrintMessage('\n')
-    #
-    #def sayw(msg):
-    #    FreeCAD.Console.PrintWarning(msg)
-    #    FreeCAD.Console.PrintWarning('\n')
-    
+        
     def edgeToVector(edge):
         """ Return a vector from an edge or a Part.line.
         """
@@ -667,17 +672,26 @@ def Align(normal,type,mode,cx,cy,cz):
     coordPs = []
     sEdge = []
     j = 0
+    p0 =  FreeCAD.Placement (FreeCAD.Vector(0,0,0), FreeCAD.Rotation(0,0,0), FreeCAD.Vector(0,0,0))
     # .BoundBox.Center
     #align faces
     if (len(selEx) > 1) and (len(selEx)==len(sel)):
         #s = obj.Shape
         last_selection = [] #removing old Move object
+        top_level_obj=[]
+        
+        for i in range (len(selEx)):
+            top_level_obj.append('none')
         for fc in selEx:
             say ("j= "+str(j))
             say("len selEx "+str(len(selEx)))
             s=fc
             #selectedEdge = FreeCADGui.Selection.getSelectionEx()[j].SubObjects[0] # select one element SubObjects    
-            selectedEdge = selEx[j].SubObjects[0] # select one element SubObjects    
+            try:
+                selectedEdge = selEx[j].SubObjects[0] # select one element SubObjects    
+            except:
+                sayerr('select only Faces or closed Edges')
+                return
             sEdge.append(selectedEdge)
             pad=0
             if str(fc.SubObjects[0])[1:5] != "Face": #edge
@@ -686,83 +700,151 @@ def Align(normal,type,mode,cx,cy,cz):
                 # except:
                 #     stop
                 try:
+                    sayerr(str(selectedEdge.Placement))
                     wire = Part.Wire(selectedEdge)
-                    fw = Part.Face(wire)
+                    #sayw(str(wire.Placement))
+                    f = Part.Face(wire)
                 except:
                     sayerr('edge non closed to be managed')
                     Edge_Point = centerLinePoint(selectedEdge,info=0)
                     reply = QtGui.QMessageBox.information(None,"info", "edge(s) non closed are not managed atm\n")
                     stop
                 #Part.show(fw)
-                f=FreeCAD.ActiveDocument.addObject("Part::Feature","Facebinder")
-                f.Shape=fw 
+                Part.show(f)
+                #stop
+                #f.Placement=selectedEdge.Placement
+                fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                s = FreeCAD.ActiveDocument.getObject(fName)
+                #sayerr(str(f.Placement))
+                s.Placement = f.Placement
+                s.Label = 'single-copy-absolute-placement-edge'
+                #stop
+                #f.Placement = s.Placement
                 pad=1
                 #FreeCAD.ActiveDocument.recompute()
                 say("Label : "+ make_string(sel[j].Label))     # extract the Label
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
-                say( "Center Face Binder "+str(0)+" "+str(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass)) # Vector center mass to face
-                say( "Center Face Binder bb "+str(0)+" "+str(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
+                say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
+                say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
             else: #face
                 pad=0
-                f=Draft.makeFacebinder(s)
+                f=fc.SubObjects[0].Faces[0].copy()
+                Part.show(f)
+                fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                s = FreeCAD.ActiveDocument.getObject(fName)
+                s.Placement = f.Placement
+                sayerr(str(f.Placement))
+                s.Label = 'single-copy-absolute-placement'
+                #f.Placement = s.Placement
                 say("Label : "+ make_string(sel[j].Label))     # extract the Label
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
-                say( "Center Face Binder "+str(0)+" "+str(f.Shape.Faces[0].CenterOfMass)) # Vector center mass to face
-                say( "Center Face Binder bb "+str(0)+" "+str(f.Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
+                say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
+                say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
             # LineColor
+            ob = fc.Object
+            pOriginal=ob.Placement
+            s.Placement=p0
+            #stop
+            ##ob.Placement=p0
+            #say('resetting props #2')
+            #sh=ob.Shape
+            sh=s.Shape
+            r=[]
+            t=sh.copy()
+            for i in t.childShapes():
+                c=i.copy()
+                c.Placement=t.Placement.multiply(c.Placement)
+                r.append((i,c))
+            acpy=t.replaceShape(r)
+            acpy.Placement=FreeCAD.Placement()
+            if hasattr(ob,'InListRecursive'):
+                lrl=len(ob.InListRecursive)
+                for o in ob.InListRecursive:
+                    say(o.Name)
+                inverted=True
+                if len(ob.InList):
+                    top_level_obj[j] = get_top_level(ob)
+                    #sayerr(top_level_obj[j].Label)
+                    #stop
+                    if ob.InListRecursive[0].Name == ob.InList[0].Name:
+                        inverted=False
+                    if inverted:
+                        #top_level_obj[j]=(ob.InListRecursive[0])
+                        for i in range (0,lrl):
+                            if hasattr(ob.InListRecursive[i],'Placement'):
+                                acpy.Placement=acpy.Placement.multiply(ob.InListRecursive[i].Placement)
+                    else:
+                        #top_level_obj[j]=(ob.InListRecursive[lrl-1])
+                        for i in range (0,lrl):
+                            if hasattr(ob.InListRecursive[i],'Placement'):
+                                acpy.Placement=acpy.Placement.multiply(ob.InListRecursive[lrl-1-i].Placement)
+            say(acpy.Placement)
+            #acpy.Placement=acpy.Placement.multiply(pOriginal)
+            if pad == 0: #note making wire from edge already resets the original placement
+                acpy.Placement=acpy.Placement.multiply(pOriginal)
+            s.Placement = acpy.Placement
+            ##ob.Placement = pOriginal
+            
+            f.Placement = s.Placement
+            #stop
+        
             red   = 1.0  # 1 = 255
             green = 0.0  #
             blue  = 0.0  #
             if create_points:
                 if pad==0:
                     if use_bb:
-                        Draft.makePoint(f.Shape.Faces[0].BoundBox.Center.x,f.Shape.Faces[0].BoundBox.Center.y,f.Shape.Faces[0].BoundBox.Center.z) # create a point
+                        Draft.makePoint(f.Faces[0].BoundBox.Center.x,f.Faces[0].BoundBox.Center.y,f.Faces[0].BoundBox.Center.z) # create a point
                     else:
-                        Draft.makePoint(f.Shape.Faces[0].CenterOfMass.x,f.Shape.Faces[0].CenterOfMass.y,f.Shape.Faces[0].CenterOfMass.z) # create a point
+                        Draft.makePoint(f.Faces[0].CenterOfMass.x,f.Faces[0].CenterOfMass.y,f.Faces[0].CenterOfMass.z) # create a point
                     FreeCADGui.activeDocument().activeObject().PointColor = (red, green, blue)
                 else:
                     if use_bb:
-                        Draft.makePoint(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.x,FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.y,FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.z) # create a point
+                        Draft.makePoint(f.Faces[0].BoundBox.Center.x,f.Faces[0].CenterOfMass.y,f.Faces[0].CenterOfMass.z) # create a point
                     else:
-                        Draft.makePoint(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.x,FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.y,FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.z) # create a point
+                        Draft.makePoint(f.Faces[0].CenterOfMass.x,f.Faces[0].CenterOfMass.y,f.Faces[0].CenterOfMass.z) # create a point
                     FreeCADGui.activeDocument().activeObject().PointColor = (red, green, blue)            
             if pad==0:
                 if use_bb:
-                    coordNx = f.Shape.Faces[0].BoundBox.Center.x
-                    coordNy = f.Shape.Faces[0].BoundBox.Center.y
-                    coordNz = f.Shape.Faces[0].BoundBox.Center.z
-                    coordP  = f.Shape.Faces[0].BoundBox.Center
+                    coordNx = f.Faces[0].BoundBox.Center.x
+                    coordNy = f.Faces[0].BoundBox.Center.y
+                    coordNz = f.Faces[0].BoundBox.Center.z
+                    coordP  = f.Faces[0].BoundBox.Center
                 else:
-                    coordNx = f.Shape.Faces[0].CenterOfMass.x
-                    coordNy = f.Shape.Faces[0].CenterOfMass.y
-                    coordNz = f.Shape.Faces[0].CenterOfMass.z
-                    coordP  = f.Shape.Faces[0].CenterOfMass
+                    coordNx = f.Faces[0].CenterOfMass.x
+                    coordNy = f.Faces[0].CenterOfMass.y
+                    coordNz = f.Faces[0].CenterOfMass.z
+                    coordP  = f.Faces[0].CenterOfMass
             else:
                 if use_bb:
-                    coordNx = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.x
-                    coordNy = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.y
-                    coordNz = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.z
-                    coordP  = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center
+                    coordNx = f.Faces[0].BoundBox.Center.x
+                    coordNy = f.Faces[0].BoundBox.Center.y
+                    coordNz = f.Faces[0].BoundBox.Center.z
+                    coordP  = f.Faces[0].BoundBox.Center
                 else:
-                    coordNx = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.x
-                    coordNy = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.y
-                    coordNz = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.z
-                    coordP  = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass
+                    coordNx = f.Faces[0].CenterOfMass.x
+                    coordNy = f.Faces[0].CenterOfMass.y
+                    coordNz = f.Faces[0].CenterOfMass.z
+                    coordP  = f.Faces[0].CenterOfMass
             coords.append ([coordNx,coordNy,coordNz])
             coordPs.append (coordP)
             #norm = f.Shape.Faces[0].normalAt(0,0)
             if j==0:
                 if normal==1:
-                    norm = f.Shape.Faces[0].normalAt(0,0)*-1
+                    norm = f.Faces[0].normalAt(0,0)*-1
                 else:
-                    norm = f.Shape.Faces[0].normalAt(0,0)
+                    norm = f.Faces[0].normalAt(0,0)
             else:
-                norm = f.Shape.Faces[0].normalAt(0,0)
+                norm = f.Faces[0].normalAt(0,0)
             #else:
             #    norm = f.Shape.Faces[0].normalAt(0,0)        
             say (norm)
             normals.append (norm)
-            FreeCAD.ActiveDocument.removeObject(f.Name)
+            if not testing:
+                FreeCAD.ActiveDocument.removeObject(fName)
+            else:
+                print 'testing'
+                #stop
             if j>0:
                 pos=App.Vector(-coords[j][0]+coords[0][0],-coords[j][1]+coords[0][1],-coords[j][2]+coords[0][2])
                 ## objs[j].Placement.move(pos)
@@ -794,96 +876,51 @@ def Align(normal,type,mode,cx,cy,cz):
                 say(rot_axis)
                 say(rot_center)
                 say(rot_angle)
-                if rot_angle!=0: # and rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
-                    if mode==0 or mode==2:
-                        if rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
-                            Draft.rotate(objs[j],-rot_angle,rot_center,rot_axis)
-                            rotating[j] = [rot_angle,rot_center,rot_axis]
-                            say("Rotated     : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
-                        else:
-                            rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
-                else:
-                    rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
-            j=j+1
-    
-    coords = []
-    normals = []
-    coordPs = []
-    j = 0
-    
-    #align centers
-    if (len(selEx) >= 1) and (len(selEx)==len(sel)):
-        #s = obj.Shape
-        for fc in selEx:
-            s=fc
-            print j
-            #selectedEdge = FreeCADGui.Selection.getSelectionEx()[j].SubObjects[0] # select one element SubObjects    
-            selectedEdge = sEdge[j] # select one element SubObjects    
-            pad=0
-            if str(fc.SubObjects[0])[1:5] != "Face":
-                wire = Part.Wire(selectedEdge)
-                fw = Part.Face(wire)
-                if testing:
-                    Part.show(fw)
-                f=FreeCAD.ActiveDocument.addObject("Part::Feature","Facebinder")
-                f.Shape=fw 
-                pad=1
-                #FreeCAD.ActiveDocument.recompute()
-            else:
-                pad=0
-                f=Draft.makeFacebinder(s)
-            say("Label : "+ make_string(sel[j].Label))     # extract the Label
-            say("Name  : "+ str(sel[j].Name))     # extract the Name
-            say( "Center Face Binder "+str(0)+" "+str(f.Shape.Faces[0].CenterOfMass)) # Vector center mass to face
-            say( "Center Face Binder bb "+str(0)+" "+str(f.Shape.Faces[0].BoundBox.Center)) # Vector center mass to face
-            # LineColor
-            red   = 1.0  # 1 = 255
-            green = 0.0  #
-            blue  = 0.0  #
-            if create_points:
-                if pad==0:
-                    Draft.makePoint(f.Shape.Faces[0].CenterOfMass.x,f.Shape.Faces[0].CenterOfMass.y,f.Shape.Faces[0].CenterOfMass.z) # create a point
-                    FreeCADGui.activeDocument().activeObject().PointColor = (red, green, blue)
-                else:
-                    Draft.makePoint(FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.x,FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.y,FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.z) # create a point
-                    FreeCADGui.activeDocument().activeObject().PointColor = (red, green, blue)            
-            if pad==0:
-                if use_bb:
-                    coordNx = f.Shape.Faces[0].BoundBox.Center.x
-                    coordNy = f.Shape.Faces[0].BoundBox.Center.y
-                    coordNz = f.Shape.Faces[0].BoundBox.Center.z
-                    coordP  = f.Shape.Faces[0].BoundBox.Center
-                else:
-                    coordNx = f.Shape.Faces[0].CenterOfMass.x
-                    coordNy = f.Shape.Faces[0].CenterOfMass.y
-                    coordNz = f.Shape.Faces[0].CenterOfMass.z
-                    coordP  = f.Shape.Faces[0].CenterOfMass
-                norm = f.Shape.Faces[0].normalAt(0,0)
-            else:
-                if use_bb:
-                    coordNx = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.x
-                    coordNy = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.y
-                    coordNz = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center.z
-                    coordP  = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].BoundBox.Center
-                else:
-                    coordNx = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.x
-                    coordNy = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.y
-                    coordNz = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass.z
-                    coordP  = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].CenterOfMass
-                norm    = FreeCAD.ActiveDocument.getObject(f.Name).Shape.Faces[0].normalAt(0,0)
-            coords.append ([coordNx,coordNy,coordNz])
-            coordPs.append (coordP)
-            say (norm)
-            normals.append (norm)
-            FreeCAD.ActiveDocument.removeObject(f.Name)
+                
+                object_added=0
+                if not testing2:
+                    print 'not testing2, mode  ', mode, ' rot_angle ',rot_angle
+                    if rot_angle!=0: # and rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
+                        if mode==0 or mode==2:
+                            if rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
+                                if top_level_obj[j] != 'none':
+                                    o = top_level_obj[j]
+                                else:
+                                    o = objs[j] 
+                                #sayerr(o.Name+' '+o.Label+' '+str(o.Placement)+' rotation')
+                                objs_moved.append(o)
+                                plc_moved.append(o.Placement)
+                                object_added=1
+                                Draft.rotate(o,-rot_angle,rot_center,rot_axis)
+                                rotating[j] = [rot_angle,rot_center,rot_axis]
+                                say("Rotated     : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
+                            else:
+                                rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
+                    else:
+                        rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
+            ##align centers
             if j>0:
                 pos=App.Vector((-coords[j][0]+coords[0][0])*cx,(-coords[j][1]+coords[0][1])*cy,(-coords[j][2]+coords[0][2])*cz)
                 if mode==0 or mode==1:
-                    objs[j].Placement.move(pos)
+                    #objs[j].Placement.move(pos)
+                    if object_added==0:
+                        if top_level_obj[j] != 'none':
+                            o = top_level_obj[j]
+                        else:
+                            o = objs[j] 
+                        objs_moved.append(o)
+                        plc_moved.append(o.Placement)
+                        #sayerr(o.Name+' '+o.Label+' '+str(o.Placement)+' centers')
+                        object_added=1
+                    o.Placement.move(pos)
                     moving[j] = pos
                     say("Moved     : "+str(coordNx-coords[0][0])+" "+str(coordNy-coords[0][1])+" "+str(coordNz-coords[0][2]))
+                    if mode==1:
+                        rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
                 else:
                     moving[j] = App.Vector(0,0,0)
+
+            object_added=0
             j=j+1
     
     FreeCAD.ActiveDocument.recompute()
