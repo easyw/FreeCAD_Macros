@@ -742,7 +742,8 @@ def Align(normal,type,mode,cx,cy,cz):
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
             # LineColor
             ob = fc.Object
-            pOriginal=ob.Placement
+            ## pOriginal=ob.Placement
+            pOriginal=f.Placement
             s.Placement=p0
             #stop
             ##ob.Placement=p0
@@ -843,7 +844,7 @@ def Align(normal,type,mode,cx,cy,cz):
             if not testing:
                 FreeCAD.ActiveDocument.removeObject(fName)
             else:
-                print 'testing'
+                say('testing')
                 #stop
             if j>0:
                 pos=App.Vector(-coords[j][0]+coords[0][0],-coords[j][1]+coords[0][1],-coords[j][2]+coords[0][2])
@@ -879,7 +880,7 @@ def Align(normal,type,mode,cx,cy,cz):
                 
                 object_added=0
                 if not testing2:
-                    print 'not testing2, mode  ', mode, ' rot_angle ',rot_angle
+                    #print 'not testing2, mode  ', mode, ' rot_angle ',rot_angle
                     if rot_angle!=0: # and rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
                         if mode==0 or mode==2:
                             if rot_axis!=FreeCAD.Vector (0.0, 0.0, 0.0):
