@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.4.5" #undo alignment for App::Part hierarchical objects
+__version__ = "0.4.6" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -139,7 +139,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
 
     def retranslateUi(self, CenterAlignObjectsFacesEdges):
         CenterAlignObjectsFacesEdges.setWindowTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center Align Faces/Edges", None, QtGui.QApplication.UnicodeUTF8))
-        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><head/><body><p>Select [Ctrl+Click] multiple face(s) or closed Edges<br>or Planes and click Align</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><head/><body><p>Select [Ctrl+Click] multiple face(s) or closed Edges<br>or Planes or Axis and click Align</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "reference", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_bb.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Bounding Box", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_mass.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Mass", None, QtGui.QApplication.UnicodeUTF8))
@@ -152,7 +152,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.5</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.6</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -711,6 +711,30 @@ def Align(normal,type,mode,cx,cy,cz):
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
+            elif (selEx[j].Object.TypeId == 'App::Line'):
+                FreeCAD.ActiveDocument.addObject("Part::Plane","TempAxis")
+                FreeCAD.ActiveDocument.TempAxis.Length=1.000
+                FreeCAD.ActiveDocument.TempAxis.Width=1.000
+                FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement
+                FreeCAD.ActiveDocument.TempAxis.Label='TempAxis'
+                FreeCAD.ActiveDocument.recompute()
+                fp = FreeCAD.ActiveDocument.TempAxis.Shape.Faces[0].Edges[0]
+                pad=0
+                edge_op=1
+                f=fp.copy()
+                Part.show(f)
+                FreeCAD.ActiveDocument.removeObject("TempAxis")
+                FreeCAD.ActiveDocument.recompute()
+                fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                s = FreeCAD.ActiveDocument.getObject(fName)
+                s.Placement = f.Placement
+                sayerr(str(f.Placement))
+                s.Label = 'single-copy-absolute-placement'
+                #f.Placement = s.Placement
+                say("Label : "+ make_string(sel[j].Label))     # extract the Label
+                say("Name  : "+ str(sel[j].Name))     # extract the Name
+                say( "Center Face Binder "+str(0)+" "+str(f.CenterOfMass)) # Vector center mass to face
+                say( "Center Face Binder bb "+str(0)+" "+str(f.BoundBox.Center)) # Vector center mass to face
             else:
                 try:
                     selectedEdge = selEx[j].SubObjects[0] # select one element SubObjects    
@@ -842,15 +866,27 @@ def Align(normal,type,mode,cx,cy,cz):
                     FreeCADGui.activeDocument().activeObject().PointColor = (red, green, blue)            
             if pad==0:
                 if use_bb:
-                    coordNx = f.Faces[0].BoundBox.Center.x
-                    coordNy = f.Faces[0].BoundBox.Center.y
-                    coordNz = f.Faces[0].BoundBox.Center.z
-                    coordP  = f.Faces[0].BoundBox.Center
+                    if edge_op == 0:
+                        coordNx = f.Faces[0].BoundBox.Center.x
+                        coordNy = f.Faces[0].BoundBox.Center.y
+                        coordNz = f.Faces[0].BoundBox.Center.z
+                        coordP  = f.Faces[0].BoundBox.Center
+                    else:
+                        coordNx = f.BoundBox.Center.x
+                        coordNy = f.BoundBox.Center.y
+                        coordNz = f.BoundBox.Center.z
+                        coordP  = f.BoundBox.Center
                 else:
-                    coordNx = f.Faces[0].CenterOfMass.x
-                    coordNy = f.Faces[0].CenterOfMass.y
-                    coordNz = f.Faces[0].CenterOfMass.z
-                    coordP  = f.Faces[0].CenterOfMass
+                    if edge_op == 0:
+                        coordNx = f.Faces[0].CenterOfMass.x
+                        coordNy = f.Faces[0].CenterOfMass.y
+                        coordNz = f.Faces[0].CenterOfMass.z
+                        coordP  = f.Faces[0].CenterOfMass
+                    else:
+                        coordNx = f.CenterOfMass.x
+                        coordNy = f.CenterOfMass.y
+                        coordNz = f.CenterOfMass.z
+                        coordP  = f.CenterOfMass
             else:
                 if use_bb:
                     if edge_op == 0:
