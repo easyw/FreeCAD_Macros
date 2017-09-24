@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.4.6" #undo alignment for App::Part hierarchical objects
+__version__ = "0.4.7" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -152,7 +152,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.6</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.7</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -689,8 +689,8 @@ def Align(normal,type,mode,cx,cy,cz):
             #selectedEdge = FreeCADGui.Selection.getSelectionEx()[j].SubObjects[0] # select one element SubObjects    
             if (selEx[j].Object.TypeId == 'App::Plane'):
                 FreeCAD.ActiveDocument.addObject("Part::Plane","TempPlane")
-                FreeCAD.ActiveDocument.TempPlane.Length=1.000
-                FreeCAD.ActiveDocument.TempPlane.Width=1.000
+                FreeCAD.ActiveDocument.TempPlane.Length=5.000
+                FreeCAD.ActiveDocument.TempPlane.Width=5.000
                 FreeCAD.ActiveDocument.TempPlane.Placement=selEx[j].Object.Placement
                 FreeCAD.ActiveDocument.TempPlane.Label='TempPlane'
                 FreeCAD.ActiveDocument.recompute()
@@ -713,14 +713,14 @@ def Align(normal,type,mode,cx,cy,cz):
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
             elif (selEx[j].Object.TypeId == 'App::Line'):
                 FreeCAD.ActiveDocument.addObject("Part::Plane","TempAxis")
-                FreeCAD.ActiveDocument.TempAxis.Length=1.000
-                FreeCAD.ActiveDocument.TempAxis.Width=1.000
+                FreeCAD.ActiveDocument.TempAxis.Length=5.000
+                FreeCAD.ActiveDocument.TempAxis.Width=5.000
                 FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement
                 FreeCAD.ActiveDocument.TempAxis.Label='TempAxis'
                 FreeCAD.ActiveDocument.recompute()
-                fp = FreeCAD.ActiveDocument.TempAxis.Shape.Faces[0].Edges[0]
+                fp = FreeCAD.ActiveDocument.TempAxis.Shape.Faces[0].Edges[1]
                 pad=0
-                edge_op=1
+                edge_op=2
                 f=fp.copy()
                 Part.show(f)
                 FreeCAD.ActiveDocument.removeObject("TempAxis")
@@ -914,16 +914,18 @@ def Align(normal,type,mode,cx,cy,cz):
             coordPs.append (coordP)
             #norm = f.Shape.Faces[0].normalAt(0,0)
             if j==0:
-                if normal==1:
+                if normal==1: #inverted
                     if edge_op == 0:
                         norm = f.Faces[0].normalAt(0,0)*-1
-                    else:
+                    elif edge_op == 1:
                         norm = f.Vertex2.Point - f.Vertex1.Point
-                        #norm = FreeCAD.Vector (0.0, 0.0, 1.0)
-                        #norm = e.normalAt(0)*-1
+                    else:
+                        norm = f.Vertex1.Point - f.Vertex2.Point
                 else:
                     if edge_op == 0:
                         norm = f.Faces[0].normalAt(0,0)
+                    elif edge_op == 1:
+                        norm = f.Vertex2.Point - f.Vertex1.Point
                     else:
                         norm = f.Vertex2.Point - f.Vertex1.Point
                         #norm = e.normalAt(0)
