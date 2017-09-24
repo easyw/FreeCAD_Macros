@@ -8,4 +8,5 @@ This repo is containing some useful FreeCAD Macros
   - v0.44 added Planes to alignment
   - v0.45 added Edges to alignment
   - v0.47 added Axis to alignment
+  - v0.48 added Datum Planes
 
