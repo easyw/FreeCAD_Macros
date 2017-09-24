@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.4.4" #undo alignment for App::Part hierarchical objects
+__version__ = "0.4.5" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -696,6 +696,7 @@ def Align(normal,type,mode,cx,cy,cz):
                 FreeCAD.ActiveDocument.recompute()
                 fp = FreeCAD.ActiveDocument.TempPlane.Shape.Faces[0]
                 pad=0
+                edge_op=0
                 f=fp.copy()
                 Part.show(f)
                 FreeCAD.ActiveDocument.removeObject("TempPlane")
@@ -718,6 +719,7 @@ def Align(normal,type,mode,cx,cy,cz):
                     return
                 sEdge.append(selectedEdge)
                 pad=0
+                edge_op=0
                 if str(fc.SubObjects[0])[1:5] != "Face": #edge
                     # try:                        
                     #     Edge_Point = centerLinePoint(selectedEdge,info=1)
@@ -727,12 +729,16 @@ def Align(normal,type,mode,cx,cy,cz):
                         sayerr(str(selectedEdge.Placement))
                         wire = Part.Wire(selectedEdge)
                         #sayw(str(wire.Placement))
+                        e = selectedEdge
                         f = Part.Face(wire)
-                    except:
-                        sayerr('edge non closed to be managed')
+                    except: # edge not closed
+                        wire = Part.Wire(selectedEdge)
+                        f = wire
+                        edge_op=1
+                        #sayerr('edge not closed to be managed')
                         Edge_Point = centerLinePoint(selectedEdge,info=0)
-                        reply = QtGui.QMessageBox.information(None,"info", "edge(s) non closed are not managed atm\n")
-                        stop
+                        #reply = QtGui.QMessageBox.information(None,"info", "edge(s) non closed are not managed atm\n")
+                        #stop
                     #Part.show(fw)
                     Part.show(f)
                     #stop
@@ -748,8 +754,12 @@ def Align(normal,type,mode,cx,cy,cz):
                     #FreeCAD.ActiveDocument.recompute()
                     say("Label : "+ make_string(sel[j].Label))     # extract the Label
                     say("Name  : "+ str(sel[j].Name))     # extract the Name
-                    say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
-                    say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
+                    if edge_op==0:
+                        say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
+                        say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
+                    else:
+                        say( "Center Face Binder "+str(0)+" "+str(f.CenterOfMass)) # Vector center mass to face
+                        say( "Center Face Binder bb "+str(0)+" "+str(f.BoundBox.Center)) # Vector center mass to face
                 else: #face
                     pad=0
                     f=fc.SubObjects[0].Faces[0].copy()
@@ -843,25 +853,50 @@ def Align(normal,type,mode,cx,cy,cz):
                     coordP  = f.Faces[0].CenterOfMass
             else:
                 if use_bb:
-                    coordNx = f.Faces[0].BoundBox.Center.x
-                    coordNy = f.Faces[0].BoundBox.Center.y
-                    coordNz = f.Faces[0].BoundBox.Center.z
-                    coordP  = f.Faces[0].BoundBox.Center
+                    if edge_op == 0:
+                        coordNx = f.Faces[0].BoundBox.Center.x
+                        coordNy = f.Faces[0].BoundBox.Center.y
+                        coordNz = f.Faces[0].BoundBox.Center.z
+                        coordP  = f.Faces[0].BoundBox.Center
+                    else:
+                        coordNx = f.BoundBox.Center.x
+                        coordNy = f.BoundBox.Center.y
+                        coordNz = f.BoundBox.Center.z
+                        coordP  = f.BoundBox.Center
                 else:
-                    coordNx = f.Faces[0].CenterOfMass.x
-                    coordNy = f.Faces[0].CenterOfMass.y
-                    coordNz = f.Faces[0].CenterOfMass.z
-                    coordP  = f.Faces[0].CenterOfMass
+                    if edge_op == 0:
+                        coordNx = f.Faces[0].CenterOfMass.x
+                        coordNy = f.Faces[0].CenterOfMass.y
+                        coordNz = f.Faces[0].CenterOfMass.z
+                        coordP  = f.Faces[0].CenterOfMass
+                    else:
+                        coordNx = f.CenterOfMass.x
+                        coordNy = f.CenterOfMass.y
+                        coordNz = f.CenterOfMass.z
+                        coordP  = f.CenterOfMass
             coords.append ([coordNx,coordNy,coordNz])
             coordPs.append (coordP)
             #norm = f.Shape.Faces[0].normalAt(0,0)
             if j==0:
                 if normal==1:
-                    norm = f.Faces[0].normalAt(0,0)*-1
+                    if edge_op == 0:
+                        norm = f.Faces[0].normalAt(0,0)*-1
+                    else:
+                        norm = f.Vertex2.Point - f.Vertex1.Point
+                        #norm = FreeCAD.Vector (0.0, 0.0, 1.0)
+                        #norm = e.normalAt(0)*-1
                 else:
-                    norm = f.Faces[0].normalAt(0,0)
+                    if edge_op == 0:
+                        norm = f.Faces[0].normalAt(0,0)
+                    else:
+                        norm = f.Vertex2.Point - f.Vertex1.Point
+                        #norm = e.normalAt(0)
             else:
-                norm = f.Faces[0].normalAt(0,0)
+                if edge_op == 0:
+                    norm = f.Faces[0].normalAt(0,0)
+                else:
+                    norm = f.Vertex2.Point - f.Vertex1.Point
+                    #norm = e.normalAt(0)
             #else:
             #    norm = f.Shape.Faces[0].normalAt(0,0)        
             say (norm)
