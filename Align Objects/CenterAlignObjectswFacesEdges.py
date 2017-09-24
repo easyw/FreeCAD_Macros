@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.4.3" #undo alignment for App::Part hierarchical objects
+__version__ = "0.4.4" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -139,7 +139,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
 
     def retranslateUi(self, CenterAlignObjectsFacesEdges):
         CenterAlignObjectsFacesEdges.setWindowTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center Align Faces/Edges", None, QtGui.QApplication.UnicodeUTF8))
-        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><head/><body><p>Select [Ctrl+Click] multiple face(s) or closed Edges and click Align</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.lbl_info.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><head/><body><p>Select [Ctrl+Click] multiple face(s) or closed Edges<br>or Planes and click Align</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "reference", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_bb.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Bounding Box", None, QtGui.QApplication.UnicodeUTF8))
         self.rb_mass.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Center of Mass", None, QtGui.QApplication.UnicodeUTF8))
@@ -152,7 +152,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.3</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.4</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -687,49 +687,19 @@ def Align(normal,type,mode,cx,cy,cz):
             say("len selEx "+str(len(selEx)))
             s=fc
             #selectedEdge = FreeCADGui.Selection.getSelectionEx()[j].SubObjects[0] # select one element SubObjects    
-            try:
-                selectedEdge = selEx[j].SubObjects[0] # select one element SubObjects    
-            except:
-                sayerr('select only Faces or closed Edges')
-                return
-            sEdge.append(selectedEdge)
-            pad=0
-            if str(fc.SubObjects[0])[1:5] != "Face": #edge
-                # try:                        
-                #     Edge_Point = centerLinePoint(selectedEdge,info=1)
-                # except:
-                #     stop
-                try:
-                    sayerr(str(selectedEdge.Placement))
-                    wire = Part.Wire(selectedEdge)
-                    #sayw(str(wire.Placement))
-                    f = Part.Face(wire)
-                except:
-                    sayerr('edge non closed to be managed')
-                    Edge_Point = centerLinePoint(selectedEdge,info=0)
-                    reply = QtGui.QMessageBox.information(None,"info", "edge(s) non closed are not managed atm\n")
-                    stop
-                #Part.show(fw)
-                Part.show(f)
-                #stop
-                #f.Placement=selectedEdge.Placement
-                fName= FreeCAD.ActiveDocument.ActiveObject.Name
-                s = FreeCAD.ActiveDocument.getObject(fName)
-                #sayerr(str(f.Placement))
-                s.Placement = f.Placement
-                s.Label = 'single-copy-absolute-placement-edge'
-                #stop
-                #f.Placement = s.Placement
-                pad=1
-                #FreeCAD.ActiveDocument.recompute()
-                say("Label : "+ make_string(sel[j].Label))     # extract the Label
-                say("Name  : "+ str(sel[j].Name))     # extract the Name
-                say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
-                say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
-            else: #face
+            if (selEx[j].Object.TypeId == 'App::Plane'):
+                FreeCAD.ActiveDocument.addObject("Part::Plane","TempPlane")
+                FreeCAD.ActiveDocument.TempPlane.Length=1.000
+                FreeCAD.ActiveDocument.TempPlane.Width=1.000
+                FreeCAD.ActiveDocument.TempPlane.Placement=selEx[j].Object.Placement
+                FreeCAD.ActiveDocument.TempPlane.Label='TempPlane'
+                FreeCAD.ActiveDocument.recompute()
+                fp = FreeCAD.ActiveDocument.TempPlane.Shape.Faces[0]
                 pad=0
-                f=fc.SubObjects[0].Faces[0].copy()
+                f=fp.copy()
                 Part.show(f)
+                FreeCAD.ActiveDocument.removeObject("TempPlane")
+                FreeCAD.ActiveDocument.recompute()
                 fName= FreeCAD.ActiveDocument.ActiveObject.Name
                 s = FreeCAD.ActiveDocument.getObject(fName)
                 s.Placement = f.Placement
@@ -740,8 +710,63 @@ def Align(normal,type,mode,cx,cy,cz):
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
+            else:
+                try:
+                    selectedEdge = selEx[j].SubObjects[0] # select one element SubObjects    
+                except:
+                    sayerr('select only Faces or closed Edges')
+                    return
+                sEdge.append(selectedEdge)
+                pad=0
+                if str(fc.SubObjects[0])[1:5] != "Face": #edge
+                    # try:                        
+                    #     Edge_Point = centerLinePoint(selectedEdge,info=1)
+                    # except:
+                    #     stop
+                    try:
+                        sayerr(str(selectedEdge.Placement))
+                        wire = Part.Wire(selectedEdge)
+                        #sayw(str(wire.Placement))
+                        f = Part.Face(wire)
+                    except:
+                        sayerr('edge non closed to be managed')
+                        Edge_Point = centerLinePoint(selectedEdge,info=0)
+                        reply = QtGui.QMessageBox.information(None,"info", "edge(s) non closed are not managed atm\n")
+                        stop
+                    #Part.show(fw)
+                    Part.show(f)
+                    #stop
+                    #f.Placement=selectedEdge.Placement
+                    fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                    s = FreeCAD.ActiveDocument.getObject(fName)
+                    #sayerr(str(f.Placement))
+                    s.Placement = f.Placement
+                    s.Label = 'single-copy-absolute-placement-edge'
+                    #stop
+                    #f.Placement = s.Placement
+                    pad=1
+                    #FreeCAD.ActiveDocument.recompute()
+                    say("Label : "+ make_string(sel[j].Label))     # extract the Label
+                    say("Name  : "+ str(sel[j].Name))     # extract the Name
+                    say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
+                    say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
+                else: #face
+                    pad=0
+                    f=fc.SubObjects[0].Faces[0].copy()
+                    Part.show(f)
+                    fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                    s = FreeCAD.ActiveDocument.getObject(fName)
+                    s.Placement = f.Placement
+                    sayerr(str(f.Placement))
+                    s.Label = 'single-copy-absolute-placement'
+                    #f.Placement = s.Placement
+                    say("Label : "+ make_string(sel[j].Label))     # extract the Label
+                    say("Name  : "+ str(sel[j].Name))     # extract the Name
+                    say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
+                    say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
             # LineColor
             ob = fc.Object
+            #print ob.Placement
             ## pOriginal=ob.Placement
             pOriginal=f.Placement
             s.Placement=p0
@@ -777,7 +802,7 @@ def Align(normal,type,mode,cx,cy,cz):
                     else:
                         #top_level_obj[j]=(ob.InListRecursive[lrl-1])
                         for i in range (0,lrl):
-                            if hasattr(ob.InListRecursive[i],'Placement'):
+                            if hasattr(ob.InListRecursive[lrl-1-i],'Placement'):
                                 acpy.Placement=acpy.Placement.multiply(ob.InListRecursive[lrl-1-i].Placement)
             say(acpy.Placement)
             #acpy.Placement=acpy.Placement.multiply(pOriginal)
@@ -925,7 +950,8 @@ def Align(normal,type,mode,cx,cy,cz):
             j=j+1
     
     FreeCAD.ActiveDocument.recompute()
-    for obj in objs:
+    #for obj in objs:
+    for obj in FreeCAD.ActiveDocument.Objects:
         FreeCADGui.Selection.removeSelection(obj)
     
     # except:
