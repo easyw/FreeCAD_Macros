@@ -10,17 +10,14 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.4.8" #undo alignment for App::Part hierarchical objects
+__version__ = "0.4.9" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
 testing2=False #true for showing helpers
 
 ## todo 
-## align edges when are just a line
-## use faces when available?
-## make Undo doing opposite Moved, Rotated on objs (prob it is enough the Rotation plus actual undo)
-## align PartDN and Body using simplecopy plcm of faces
+#  better Gui with icons
 
 # * (C) Maurice easyw-fc 2016
 # *   This program is free software; you can redistribute it and/or modify  *
@@ -152,7 +149,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.8</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.4.9</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -468,6 +465,40 @@ def get_top_level (obj):
             lvl = len(ap.InListRecursive)
     return top
 
+def reset_prop_shapes(obj):
+
+    s=obj.Shape
+    #say('resetting props #2')
+    r=[]
+    t=s.copy()
+    for i in t.childShapes():
+        c=i.copy()
+        c.Placement=t.Placement.multiply(c.Placement)
+        r.append((i,c))
+
+    w=t.replaceShape(r)
+    w.Placement=FreeCAD.Placement()
+    Part.show(w)
+    #say(w)
+    #
+    #FreeCADGui.ActiveDocument.ActiveObject.ShapeColor=FreeCADGui.ActiveDocument.Part__Feature.ShapeColor
+    #FreeCADGui.ActiveDocument.ActiveObject.LineColor=FreeCADGui.ActiveDocument.Part__Feature.LineColor
+    #FreeCADGui.ActiveDocument.ActiveObject.PointColor=FreeCADGui.ActiveDocument.Part__Feature.PointColor
+    #FreeCADGui.ActiveDocument.ActiveObject.DiffuseColor=FreeCADGui.ActiveDocument.Part__Feature.DiffuseColor
+    FreeCADGui.ActiveDocument.ActiveObject.ShapeColor=FreeCADGui.ActiveDocument.getObject(obj.Name).ShapeColor
+    FreeCADGui.ActiveDocument.ActiveObject.LineColor=FreeCADGui.ActiveDocument.getObject(obj.Name).LineColor
+    FreeCADGui.ActiveDocument.ActiveObject.PointColor=FreeCADGui.ActiveDocument.getObject(obj.Name).PointColor
+    FreeCADGui.ActiveDocument.ActiveObject.DiffuseColor=FreeCADGui.ActiveDocument.getObject(obj.Name).DiffuseColor
+    new_label=obj.Label
+    FreeCAD.ActiveDocument.removeObject(obj.Name)
+    FreeCAD.ActiveDocument.recompute()
+    FreeCAD.ActiveDocument.ActiveObject.Label=new_label
+    rstObj=FreeCAD.ActiveDocument.ActiveObject
+    #say(rstObj)
+    #
+
+    return rstObj
+
 def Align(normal,type,mode,cx,cy,cz):
     global initial_placement, last_selection
     global objs, objs_plc
@@ -688,20 +719,16 @@ def Align(normal,type,mode,cx,cy,cz):
             s=fc
             #selectedEdge = FreeCADGui.Selection.getSelectionEx()[j].SubObjects[0] # select one element SubObjects    
             if (selEx[j].Object.TypeId == 'App::Plane') or (selEx[j].Object.TypeId == 'PartDesign::Plane'):
-                FreeCAD.ActiveDocument.addObject("Part::Plane","TempPlane")
-                FreeCAD.ActiveDocument.TempPlane.Length=5.000
-                FreeCAD.ActiveDocument.TempPlane.Width=5.000
-                FreeCAD.ActiveDocument.TempPlane.Placement=selEx[j].Object.Placement
-                FreeCAD.ActiveDocument.TempPlane.Label='TempPlane'
-                FreeCAD.ActiveDocument.recompute()
-                fp = FreeCAD.ActiveDocument.TempPlane.Shape.Faces[0]
+                cw = Part.Wire([Part.Circle(FreeCAD.Vector(0, 0), FreeCAD.Vector(0, 0, 1), 2.0).toShape()])
+                fp = Part.Face(cw)
                 pad=0
                 edge_op=0
                 f=fp.copy()
                 Part.show(f)
-                FreeCAD.ActiveDocument.removeObject("TempPlane")
+                #FreeCAD.ActiveDocument.removeObject("TempPlane")
                 FreeCAD.ActiveDocument.recompute()
                 fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                f.Placement=selEx[j].Object.Placement #.multiply(FreeCAD.ActiveDocument.getObject(fName).Placement)
                 s = FreeCAD.ActiveDocument.getObject(fName)
                 s.Placement = f.Placement
                 sayerr(str(f.Placement))
@@ -711,18 +738,25 @@ def Align(normal,type,mode,cx,cy,cz):
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
-            elif (selEx[j].Object.TypeId == 'App::Line'):
+            elif (selEx[j].Object.TypeId == 'App::Line') or (selEx[j].Object.TypeId == 'PartDesign::Line'):
                 FreeCAD.ActiveDocument.addObject("Part::Plane","TempAxis")
                 FreeCAD.ActiveDocument.TempAxis.Length=5.000
                 FreeCAD.ActiveDocument.TempAxis.Width=5.000
                 FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement
+                #FreeCAD.ActiveDocument.TempAxis.Placement.Base=\
+                #  (-FreeCAD.ActiveDocument.TempAxis.Shape.BoundBox.Center.x,-FreeCAD.ActiveDocument.TempAxis.Shape.BoundBox.Center.y,-FreeCAD.ActiveDocument.TempAxis.Shape.BoundBox.Center.z)
+                ##FreeCAD.ActiveDocument.TempPlane.Placement=selEx[j].Object.Placement
+                #FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement.multiply(FreeCAD.ActiveDocument.TempAxis.Placement)
                 FreeCAD.ActiveDocument.TempAxis.Label='TempAxis'
                 FreeCAD.ActiveDocument.recompute()
+                t1=FreeCAD.ActiveDocument.TempAxis.Shape
+                Part.show(t1)
                 fp = FreeCAD.ActiveDocument.TempAxis.Shape.Faces[0].Edges[1]
                 pad=0
                 edge_op=2
                 f=fp.copy()
                 Part.show(f)
+                #stop
                 FreeCAD.ActiveDocument.removeObject("TempAxis")
                 FreeCAD.ActiveDocument.recompute()
                 fName= FreeCAD.ActiveDocument.ActiveObject.Name
@@ -844,7 +878,7 @@ def Align(normal,type,mode,cx,cy,cz):
                 acpy.Placement=acpy.Placement.multiply(pOriginal)
             s.Placement = acpy.Placement
             ##ob.Placement = pOriginal
-            
+            #stop
             f.Placement = s.Placement
             #stop
         
