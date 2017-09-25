@@ -749,8 +749,8 @@ def Align(normal,type,mode,cx,cy,cz):
                 #FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement.multiply(FreeCAD.ActiveDocument.TempAxis.Placement)
                 FreeCAD.ActiveDocument.TempAxis.Label='TempAxis'
                 FreeCAD.ActiveDocument.recompute()
-                t1=FreeCAD.ActiveDocument.TempAxis.Shape
-                Part.show(t1)
+                #t1=FreeCAD.ActiveDocument.TempAxis.Shape
+                #Part.show(t1)
                 fp = FreeCAD.ActiveDocument.TempAxis.Shape.Faces[0].Edges[1]
                 pad=0
                 edge_op=2
