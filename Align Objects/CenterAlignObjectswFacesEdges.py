@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.4.9" #undo alignment for App::Part hierarchical objects
+__version__ = "0.5.0" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -29,7 +29,7 @@ testing2=False #true for showing helpers
 ## done case: invert normal and standard when already aligned planes
 ## done works for Bodys on FC 0.17
 
-import FreeCAD, FreeCADGui, Draft, Part, DraftTools
+import FreeCAD, FreeCADGui, Draft, Part, DraftTools, DraftVecUtils
 from FreeCAD import Base
 import sys
 
@@ -1024,9 +1024,13 @@ def Align(normal,type,mode,cx,cy,cz):
                                 objs_moved.append(o)
                                 plc_moved.append(o.Placement)
                                 object_added=1
-                                Draft.rotate(o,-rot_angle,rot_center,rot_axis)
+                                ##Draft.rotate(o,-rot_angle,rot_center,rot_axis)
+                                shape = Part.Shape()
+                                shape.Placement = o.Placement
+                                shape.rotate(DraftVecUtils.tup(rot_center), DraftVecUtils.tup(rot_axis), -rot_angle)
+                                o.Placement = shape.Placement
                                 rotating[j] = [rot_angle,rot_center,rot_axis]
-                                say("Rotated     : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
+                                say("Rotated   "+o.Label+"  : angle "+str(-rot_angle)+" center "+str(rot_center)+" axis "+str(rot_axis))
                             else:
                                 rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
                     else:
@@ -1047,7 +1051,7 @@ def Align(normal,type,mode,cx,cy,cz):
                         object_added=1
                     o.Placement.move(pos)
                     moving[j] = pos
-                    say("Moved     : "+str(coordNx-coords[0][0])+" "+str(coordNy-coords[0][1])+" "+str(coordNz-coords[0][2]))
+                    say("Moved   "+o.Label+"  : "+str(coordNx-coords[0][0])+" "+str(coordNy-coords[0][1])+" "+str(coordNz-coords[0][2]))
                     if mode==1:
                         rotating[j] = [0, App.Vector(0,0,0), App.Vector(0,0,0)]
                 else:
