@@ -892,6 +892,7 @@ def Align(normal,type,mode,cx,cy,cz):
                     App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
                     App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(90,0,90)
                 sayw(App.ActiveDocument.testCircle.Placement)
+                f=Part.Face(Part.Wire(App.ActiveDocument.testCircle.Shape.Edges[0]))
                 Part.show(f)
                 f.Placement=App.ActiveDocument.testCircle.Placement
                 sayerr(f.Placement)
