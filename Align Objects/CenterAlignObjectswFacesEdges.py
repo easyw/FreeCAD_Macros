@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.5.1" #undo alignment for App::Part hierarchical objects
+__version__ = "0.5.2" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -150,7 +150,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.5.1</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.5.2</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -254,92 +254,10 @@ def singleInstance():
             i.deleteLater()
         else:
             pass
+##
 
-
-def centerObjectsPoint(objs,info=0):
-    """ Return the center point of all selected Objects.
-    """
-    center = None
-    xmax, xmin, ymax, ymin, zmax, zmin = minMaxObjectsLimits(objs,info=info) 
-    center = App.Vector((xmax+xmin)/2.0, (ymax+ymin)/2.0, (zmax+zmin)/2.0)
-    if info != 0:
-        print_point(center,"Center of all objects selected is : ")
-    return center
-    
-def plot_centerObjectAxes():
-    """ Create 3 Axes XY, and Z at center point of all selected objects.
-    """
-    msg=0
-    createFolders('WorkAxis')
-    error_msg = "Unable to create Axes : \nSelect at least one object !"
-    result_msg = " : Axes created !"
-
-    m_actDoc = get_ActiveDocument(info=msg)
-    if m_actDoc.Name == None:
-        return None
-        
-    # Return a list of SelectionObjects for a given document name.
-    m_selEx = Gui.Selection.getSelectionEx(m_actDoc.Name)
-    m_objs = [selobj.Object for selobj in m_selEx]
-    m_num = len(m_objs)
-    if m_num < 1:
-        printError_msg(error_msg)
-        return
-    Center = centerObjectsPoint(m_objs)
-    if Center != None:
-        xmax, xmin, ymax, ymin, zmax, zmin = minMaxObjectsLimits(m_objs)
-        #Work-AxisX
-        if xmax != xmin:
-            AX_Length = (xmax - xmin)*1.3
-        else:
-            AX_Length = 10.
-        PX_A = Base.Vector(AX_Length, 0, 0)
-        PX_B = Base.Vector(-AX_Length, 0, 0)
-        Axis_X = Part.makeLine(Center+PX_A, Center+PX_B)             
-        Axis = App.ActiveDocument.addObject("Part::Feature","X_Axis")
-        Axis.Shape = Axis_X
-        App.ActiveDocument.getObject("WorkAxis").addObject(Axis)
-        Axis_User_Name = Axis.Label
-        Gui.ActiveDocument.getObject(Axis_User_Name).LineColor = (1.00,0.00,0.00)
-        Gui.ActiveDocument.getObject(Axis_User_Name).PointColor = (1.00,0.00,0.00)
-        Gui.ActiveDocument.getObject("X_Axis").Visibility=True
-        print_msg(str(Axis_User_Name) + result_msg )
-        #Work-AxisY
-        if ymax != ymin:
-            AY_Length = (ymax - ymin)*1.3
-        else:
-            AY_Length = 10.
-        PY_A = Base.Vector(0, AY_Length, 0)
-        PY_B = Base.Vector(0, -AY_Length, 0)
-        Axis_Y = Part.makeLine(Center+PY_A, Center+PY_B)
-        Axis = App.ActiveDocument.addObject("Part::Feature","Y_Axis")
-        Axis.Shape = Axis_Y
-        App.ActiveDocument.getObject("WorkAxis").addObject(Axis)
-        Axis_User_Name = Axis.Label
-        Gui.ActiveDocument.getObject(Axis_User_Name).LineColor = (0.00,0.67,0.00)
-        Gui.ActiveDocument.getObject(Axis_User_Name).PointColor = (0.00,0.67,0.00)
-        Gui.ActiveDocument.getObject("Y_Axis").Visibility=True
-        print_msg(str(Axis_User_Name) + result_msg )
-        #Work-AxisZ
-        if zmax != zmin:
-            AZ_Length = (zmax - zmin)*1.3
-        else:
-            AZ_Length = 10.
-        PZ_A = Base.Vector(0,0 , AZ_Length)
-        PZ_B = Base.Vector(0, 0, -AZ_Length)
-        Axis_Z = Part.makeLine(Center+PZ_A, Center+PZ_B)
-        Axis = App.ActiveDocument.addObject("Part::Feature","Z_Axis")
-        Axis.Shape = Axis_Z
-        App.ActiveDocument.getObject("WorkAxis").addObject(Axis)
-        Axis_User_Name = Axis.Label
-        Gui.ActiveDocument.getObject(Axis_User_Name).LineColor =  (0.33,0.00,1.00)
-        Gui.ActiveDocument.getObject(Axis_User_Name).PointColor =  (0.33,0.00,1.00)
-        Gui.ActiveDocument.getObject("Z_Axis").Visibility=True
-        print_msg(str(Axis_User_Name) + result_msg )
-    else:
-        printError_msg(error_msg)
             
-## assigning DisplayModeBody to Tip to attach Facebinder to Body
+
 doc=FreeCAD.ActiveDocument
 #Init        
    
@@ -882,19 +800,10 @@ def Align(normal,type,mode,cx,cy,cz):
                 App.ActiveDocument.testCircle.Angle0=0.000
                 App.ActiveDocument.testCircle.Angle1=360.000
                 App.ActiveDocument.testCircle.Placement=shape.Placement
-                if 'XY' in selEx[j].Object.Name:
-                    App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
-                    App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(0,0,0)
-                if 'XZ' in selEx[j].Object.Name:
-                    App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
-                    App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(0,0,90)
-                if 'YZ' in selEx[j].Object.Name:
-                    App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
-                    App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(90,0,90)
                 sayw(App.ActiveDocument.testCircle.Placement)
                 f=Part.Face(Part.Wire(App.ActiveDocument.testCircle.Shape.Edges[0]))
                 Part.show(f)
-                f.Placement=App.ActiveDocument.testCircle.Placement
+                #f.Placement=App.ActiveDocument.testCircle.Placement
                 sayerr(f.Placement)
                 App.ActiveDocument.removeObject(App.ActiveDocument.testCircle.Name)
                 FreeCAD.ActiveDocument.recompute()
