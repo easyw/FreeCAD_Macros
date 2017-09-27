@@ -11,5 +11,6 @@ This repo is containing some useful FreeCAD Macros
   - v0.48 added Datum Planes
   - v0.49 fixed datum Planes alignment
   - v0.50 removed Draft rotate bug
+  - v0.51 fixed DatumPlanes alignment
 
 

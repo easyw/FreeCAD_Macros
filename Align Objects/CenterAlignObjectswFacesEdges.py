@@ -10,7 +10,7 @@
 __title__   = "Center Faces of Parts"
 __author__  = "maurice"
 __url__     = "kicad stepup"
-__version__ = "0.5.0" #undo alignment for App::Part hierarchical objects
+__version__ = "0.5.1" #undo alignment for App::Part hierarchical objects
 __date__    = "09.2017"
 
 testing=False #true for showing helpers
@@ -18,6 +18,7 @@ testing2=False #true for showing helpers
 
 ## todo 
 #  better Gui with icons
+## it seems XZ planes and some Datum planes have a wrong InListRecursive properties
 
 # * (C) Maurice easyw-fc 2016
 # *   This program is free software; you can redistribute it and/or modify  *
@@ -149,7 +150,7 @@ class Ui_CenterAlignObjectsFacesEdges(object):
         self.cb_z.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "z", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "center on:", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_inv_normals.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "invert Normal for Plane", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.5.0</u>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "<html><b>First Face/Edge is the Reference for alignment</b>&nbsp;&nbsp;&nbsp;<u>vers. 0.5.1</u>", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select Faces or Edges (Ctrl+LBM) and click button to Apply", None, QtGui.QApplication.UnicodeUTF8))
         self.btnAlign.setText(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "Align", None, QtGui.QApplication.UnicodeUTF8))
         self.btnMove.setToolTip(QtGui.QApplication.translate("CenterAlignObjectsFacesEdges", "select an Object and click button to Move it", None, QtGui.QApplication.UnicodeUTF8))
@@ -254,6 +255,90 @@ def singleInstance():
         else:
             pass
 
+
+def centerObjectsPoint(objs,info=0):
+    """ Return the center point of all selected Objects.
+    """
+    center = None
+    xmax, xmin, ymax, ymin, zmax, zmin = minMaxObjectsLimits(objs,info=info) 
+    center = App.Vector((xmax+xmin)/2.0, (ymax+ymin)/2.0, (zmax+zmin)/2.0)
+    if info != 0:
+        print_point(center,"Center of all objects selected is : ")
+    return center
+    
+def plot_centerObjectAxes():
+    """ Create 3 Axes XY, and Z at center point of all selected objects.
+    """
+    msg=0
+    createFolders('WorkAxis')
+    error_msg = "Unable to create Axes : \nSelect at least one object !"
+    result_msg = " : Axes created !"
+
+    m_actDoc = get_ActiveDocument(info=msg)
+    if m_actDoc.Name == None:
+        return None
+        
+    # Return a list of SelectionObjects for a given document name.
+    m_selEx = Gui.Selection.getSelectionEx(m_actDoc.Name)
+    m_objs = [selobj.Object for selobj in m_selEx]
+    m_num = len(m_objs)
+    if m_num < 1:
+        printError_msg(error_msg)
+        return
+    Center = centerObjectsPoint(m_objs)
+    if Center != None:
+        xmax, xmin, ymax, ymin, zmax, zmin = minMaxObjectsLimits(m_objs)
+        #Work-AxisX
+        if xmax != xmin:
+            AX_Length = (xmax - xmin)*1.3
+        else:
+            AX_Length = 10.
+        PX_A = Base.Vector(AX_Length, 0, 0)
+        PX_B = Base.Vector(-AX_Length, 0, 0)
+        Axis_X = Part.makeLine(Center+PX_A, Center+PX_B)             
+        Axis = App.ActiveDocument.addObject("Part::Feature","X_Axis")
+        Axis.Shape = Axis_X
+        App.ActiveDocument.getObject("WorkAxis").addObject(Axis)
+        Axis_User_Name = Axis.Label
+        Gui.ActiveDocument.getObject(Axis_User_Name).LineColor = (1.00,0.00,0.00)
+        Gui.ActiveDocument.getObject(Axis_User_Name).PointColor = (1.00,0.00,0.00)
+        Gui.ActiveDocument.getObject("X_Axis").Visibility=True
+        print_msg(str(Axis_User_Name) + result_msg )
+        #Work-AxisY
+        if ymax != ymin:
+            AY_Length = (ymax - ymin)*1.3
+        else:
+            AY_Length = 10.
+        PY_A = Base.Vector(0, AY_Length, 0)
+        PY_B = Base.Vector(0, -AY_Length, 0)
+        Axis_Y = Part.makeLine(Center+PY_A, Center+PY_B)
+        Axis = App.ActiveDocument.addObject("Part::Feature","Y_Axis")
+        Axis.Shape = Axis_Y
+        App.ActiveDocument.getObject("WorkAxis").addObject(Axis)
+        Axis_User_Name = Axis.Label
+        Gui.ActiveDocument.getObject(Axis_User_Name).LineColor = (0.00,0.67,0.00)
+        Gui.ActiveDocument.getObject(Axis_User_Name).PointColor = (0.00,0.67,0.00)
+        Gui.ActiveDocument.getObject("Y_Axis").Visibility=True
+        print_msg(str(Axis_User_Name) + result_msg )
+        #Work-AxisZ
+        if zmax != zmin:
+            AZ_Length = (zmax - zmin)*1.3
+        else:
+            AZ_Length = 10.
+        PZ_A = Base.Vector(0,0 , AZ_Length)
+        PZ_B = Base.Vector(0, 0, -AZ_Length)
+        Axis_Z = Part.makeLine(Center+PZ_A, Center+PZ_B)
+        Axis = App.ActiveDocument.addObject("Part::Feature","Z_Axis")
+        Axis.Shape = Axis_Z
+        App.ActiveDocument.getObject("WorkAxis").addObject(Axis)
+        Axis_User_Name = Axis.Label
+        Gui.ActiveDocument.getObject(Axis_User_Name).LineColor =  (0.33,0.00,1.00)
+        Gui.ActiveDocument.getObject(Axis_User_Name).PointColor =  (0.33,0.00,1.00)
+        Gui.ActiveDocument.getObject("Z_Axis").Visibility=True
+        print_msg(str(Axis_User_Name) + result_msg )
+    else:
+        printError_msg(error_msg)
+            
 ## assigning DisplayModeBody to Tip to attach Facebinder to Body
 doc=FreeCAD.ActiveDocument
 #Init        
@@ -464,6 +549,48 @@ def get_top_level (obj):
             top = ap
             lvl = len(ap.InListRecursive)
     return top
+
+def get_sorted_list (obj):
+    lvl=10000
+    completed=0
+    listUs=obj.InListRecursive
+    #sayerr('unsorted')
+    #for p in listUs:
+    #    print p.Label
+    listUsName=[]
+    for o in obj.InListRecursive:
+        listUsName.append(o.Name)
+    listS=[]
+    i=0
+    #for i, ap in enumerate(listUs):
+    #    top=ap
+    #    if len(ap.InListRecursive) < lvl:
+    #        lvl = len(ap.InListRecursive)
+    #    for ap2 in listUs[(i + 1):]:
+    #        if len(ap2.InListRecursive) < lvl:
+    #            top = ap2
+    #            lvl = len(ap2.InListRecursive)
+    #    listS.append(top)
+    sayw(listUsName)
+    i=0
+    while len (listUsName) > 0:
+        for apName in listUsName:
+            #apName=listUsName[i]
+            ap=FreeCAD.ActiveDocument.getObject(apName)
+            if len(ap.InListRecursive) < lvl:
+                lvl = len(ap.InListRecursive)
+                top = ap
+                topName = ap.Name
+        listS.append(top)
+        #print topName
+        idx=listUsName.index(topName)
+        #sayw(idx)
+        listUsName.pop(idx)
+        lvl=10000
+        #sayerr(listUsName)
+      
+    return listS
+##
 
 def reset_prop_shapes(obj):
 
@@ -718,39 +845,78 @@ def Align(normal,type,mode,cx,cy,cz):
             say("len selEx "+str(len(selEx)))
             s=fc
             #selectedEdge = FreeCADGui.Selection.getSelectionEx()[j].SubObjects[0] # select one element SubObjects    
-            if (selEx[j].Object.TypeId == 'App::Plane') or (selEx[j].Object.TypeId == 'PartDesign::Plane'):
-                cw = Part.Wire([Part.Circle(FreeCAD.Vector(0, 0), FreeCAD.Vector(0, 0, 1), 2.0).toShape()])
-                fp = Part.Face(cw)
+            if (selEx[j].Object.TypeId == 'PartDesign::Plane'): #Datum plane with super Placement #(selEx[j].Object.TypeId == 'App::Plane') or :
+                ##print norm
                 pad=0
                 edge_op=0
-                f=fp.copy()
+                f1=selEx[j].Object.Shape.Faces[0]
+                App.ActiveDocument.addObject("Part::Circle","testCircle")
+                App.ActiveDocument.testCircle.Radius=2.000
+                App.ActiveDocument.testCircle.Angle0=0.000
+                App.ActiveDocument.testCircle.Angle1=360.000
+                App.ActiveDocument.testCircle.Placement=f1.Placement
+                f=Part.Face(Part.Wire(App.ActiveDocument.testCircle.Shape.Edges[0]))
                 Part.show(f)
-                #FreeCAD.ActiveDocument.removeObject("TempPlane")
-                FreeCAD.ActiveDocument.recompute()
                 fName= FreeCAD.ActiveDocument.ActiveObject.Name
-                f.Placement=selEx[j].Object.Placement #.multiply(FreeCAD.ActiveDocument.getObject(fName).Placement)
                 s = FreeCAD.ActiveDocument.getObject(fName)
-                s.Placement = f.Placement
-                sayerr(str(f.Placement))
+                App.ActiveDocument.removeObject(App.ActiveDocument.testCircle.Name)
+                FreeCAD.ActiveDocument.recompute()
+                #stop
+                sayerr(str(s.Placement))
                 s.Label = 'single-copy-absolute-placement'
                 #f.Placement = s.Placement
                 say("Label : "+ make_string(sel[j].Label))     # extract the Label
                 say("Name  : "+ str(sel[j].Name))     # extract the Name
                 say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
                 say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face
+            elif (selEx[j].Object.TypeId == 'App::Plane') and ('XY' in selEx[j].Object.Name or 'XZ' in selEx[j].Object.Name or 'YZ' in selEx[j].Object.Name): #Origin Planes
+                pad=0
+                edge_op=0
+                shape = Part.Shape()
+                shape.Placement = selEx[j].Object.Placement #selEx[j].Object.superPlacement.multiply(selEx[j].Object.Placement)
+                #sayerr(selEx[j].Object.superPlacement)
+                #sayw(selEx[j].Object.Placement)
+                #sayerr(selEx[j].Object.superPlacement.multiply(selEx[j].Object.Placement))
+                App.ActiveDocument.addObject("Part::Circle","testCircle")
+                App.ActiveDocument.testCircle.Radius=2.000
+                App.ActiveDocument.testCircle.Angle0=0.000
+                App.ActiveDocument.testCircle.Angle1=360.000
+                App.ActiveDocument.testCircle.Placement=shape.Placement
+                if 'XY' in selEx[j].Object.Name:
+                    App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
+                    App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(0,0,0)
+                if 'XZ' in selEx[j].Object.Name:
+                    App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
+                    App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(0,0,90)
+                if 'YZ' in selEx[j].Object.Name:
+                    App.ActiveDocument.testCircle.Placement.Base = FreeCAD.Vector(0,0,0)
+                    App.ActiveDocument.testCircle.Placement.Rotation = FreeCAD.Rotation(90,0,90)
+                sayw(App.ActiveDocument.testCircle.Placement)
+                Part.show(f)
+                f.Placement=App.ActiveDocument.testCircle.Placement
+                sayerr(f.Placement)
+                App.ActiveDocument.removeObject(App.ActiveDocument.testCircle.Name)
+                FreeCAD.ActiveDocument.recompute()
+                fName= FreeCAD.ActiveDocument.ActiveObject.Name
+                s = FreeCAD.ActiveDocument.getObject(fName)
+                #f.Placement=shape.Placement
+                s.Placement=f.Placement
+                #f1=f.copy()
+                #Part.show(f1)
+                FreeCAD.ActiveDocument.ActiveObject.Label='Testing-'+str(j)
+                sayerr(str(s.Placement))
+                s.Label = 'single-copy-absolute-placement'
+                say("Label : "+ make_string(sel[j].Label))     # extract the Label
+                say("Name  : "+ str(sel[j].Name))     # extract the Name
+                say( "Center Face Binder "+str(0)+" "+str(f.Faces[0].CenterOfMass)) # Vector center mass to face
+                say( "Center Face Binder bb "+str(0)+" "+str(f.Faces[0].BoundBox.Center)) # Vector center mass to face            
             elif (selEx[j].Object.TypeId == 'App::Line') or (selEx[j].Object.TypeId == 'PartDesign::Line'):
                 FreeCAD.ActiveDocument.addObject("Part::Plane","TempAxis")
                 FreeCAD.ActiveDocument.TempAxis.Length=5.000
                 FreeCAD.ActiveDocument.TempAxis.Width=5.000
                 FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement
-                #FreeCAD.ActiveDocument.TempAxis.Placement.Base=\
-                #  (-FreeCAD.ActiveDocument.TempAxis.Shape.BoundBox.Center.x,-FreeCAD.ActiveDocument.TempAxis.Shape.BoundBox.Center.y,-FreeCAD.ActiveDocument.TempAxis.Shape.BoundBox.Center.z)
-                ##FreeCAD.ActiveDocument.TempPlane.Placement=selEx[j].Object.Placement
-                #FreeCAD.ActiveDocument.TempAxis.Placement=selEx[j].Object.Placement.multiply(FreeCAD.ActiveDocument.TempAxis.Placement)
                 FreeCAD.ActiveDocument.TempAxis.Label='TempAxis'
                 FreeCAD.ActiveDocument.recompute()
-                #t1=FreeCAD.ActiveDocument.TempAxis.Shape
-                #Part.show(t1)
                 fp = FreeCAD.ActiveDocument.TempAxis.Shape.Faces[0].Edges[1]
                 pad=0
                 edge_op=2
@@ -859,19 +1025,16 @@ def Align(normal,type,mode,cx,cy,cz):
                 if len(ob.InList):
                     top_level_obj[j] = get_top_level(ob)
                     #sayerr(top_level_obj[j].Label)
+                    listSorted=get_sorted_list (ob)
+                    #for p in listSorted:
+                    #    print p.Name
+                    #print listSorted, ' Sorted; Top ', top_level_obj[j]
                     #stop
-                    if ob.InListRecursive[0].Name == ob.InList[0].Name:
-                        inverted=False
-                    if inverted:
-                        #top_level_obj[j]=(ob.InListRecursive[0])
-                        for i in range (0,lrl):
-                            if hasattr(ob.InListRecursive[i],'Placement'):
-                                acpy.Placement=acpy.Placement.multiply(ob.InListRecursive[i].Placement)
-                    else:
-                        #top_level_obj[j]=(ob.InListRecursive[lrl-1])
-                        for i in range (0,lrl):
-                            if hasattr(ob.InListRecursive[lrl-1-i],'Placement'):
-                                acpy.Placement=acpy.Placement.multiply(ob.InListRecursive[lrl-1-i].Placement)
+                    for i in range (0,lrl):
+                        if hasattr(listSorted[i],'Placement'):
+                            #if 'Plane' not in ob.InListRecursive[i].TypeId:
+                            if listSorted[i].hasExtension("App::GeoFeatureGroupExtension"):
+                                acpy.Placement=acpy.Placement.multiply(listSorted[i].Placement)
             say(acpy.Placement)
             #acpy.Placement=acpy.Placement.multiply(pOriginal)
             if pad == 0: #note making wire from edge already resets the original placement
@@ -1049,7 +1212,8 @@ def Align(normal,type,mode,cx,cy,cz):
                         plc_moved.append(o.Placement)
                         #sayerr(o.Name+' '+o.Label+' '+str(o.Placement)+' centers')
                         object_added=1
-                    o.Placement.move(pos)
+                    if not testing2:
+                        o.Placement.move(pos)
                     moving[j] = pos
                     say("Moved   "+o.Label+"  : "+str(coordNx-coords[0][0])+" "+str(coordNy-coords[0][1])+" "+str(coordNz-coords[0][2]))
                     if mode==1:
