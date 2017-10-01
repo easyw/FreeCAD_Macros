@@ -308,8 +308,8 @@ def Undo():
     if len(last_selection) == 1:
         obj = last_selection[0].Object
         say ('last selection: ' + obj.Name)
-        #obj.Placement.Base =initial_placement
-        obj.Placement = initial_placement
+        obj.Placement.Base =initial_placement
+        #obj.Placement = initial_placement
         FreeCAD.ActiveDocument.recompute()
         objs = []
         last_selection = []
