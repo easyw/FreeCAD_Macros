@@ -2,7 +2,10 @@
 FreeCAD_Macros
 This repo is containing some useful FreeCAD Macros
 
-- Center Align Objects w Faces Edges (Body & App::Part objects included)
+#### Center Align Objects w Faces Edges (Body & App::Part objects included)
+![Center Align Gui](alignment-tool.png?raw=true "Center Align Gui")
+
+- changelog:
   - v1.53 new Gui
   - v0.52 fixed AxisPlanes alignement
   - v0.51 fixed DatumPlanes alignment
