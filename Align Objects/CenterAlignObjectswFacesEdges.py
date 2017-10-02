@@ -703,12 +703,14 @@ class Ui_DockWidget(object):
 ##
     def onHelp(self):
         msg="""<b>Align Tool</b><br>
-        Ctrl+Clik to add selection:<br>
+        <b>Ctrl+Clik</b> to add selection:<br>
         select Faces, Planes, Edges and Axis<br>
         then click the <i>'Align'</i> button<br>
-        Use <i>'Move'</i> button to move a signle object<br>
-        <b>Align Tool</b> works with Part, App::Part and Body objects
-        Version: 
+        <i>Note:</i><br>The <b>first Selection</b> is the
+        Reference for Aligning<br>
+        <br>Use <i>'Move'</i> button to move a signle object<br>
+        <br><b>Align Tool</b> works with <b>Part</b>, <b>App::Part</b> and <b>Body</b> objects
+        <b>Version:</b> 
         """+__version__
         QtGui.qApp.restoreOverrideCursor()
         res=''
